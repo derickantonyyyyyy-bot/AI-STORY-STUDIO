@@ -90,3 +90,22 @@ Never commit API keys, OAuth tokens, service-account files, or other secrets. St
 ## Next milestone
 
 Connect the story endpoint to a preview/approval screen, then generate voice audio and scene assets before implementing the full Remotion timeline.
+
+
+## Generate a complete story video
+
+Keep the API server running in one terminal:
+
+```powershell
+npm.cmd run server
+```
+
+Open a second terminal in the project folder and run:
+
+```powershell
+npm.cmd run create:video -- "what-if" "What if humans could hear the thoughts of trees?"
+```
+
+The script requests a validated 60-second storyboard from the local Groq-powered API, saves the Remotion input to `out/story-props.json`, and renders `out/story-video.mp4`. Replace the genre and premise with your own. Supported genres: `sad`, `scary`, `what-if`, `bizarre`, and `unusual-facts`.
+
+The current renderer creates animated, cinematic 3D-inspired scene layouts from the storyboard text. Character artwork, generated backgrounds, speech synthesis, and sound effects are subsequent pipeline stages.
