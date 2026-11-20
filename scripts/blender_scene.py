@@ -269,6 +269,8 @@ def main():
         camera.data.lens = base_lens
         camera.data.keyframe_insert(data_path="lens", frame=end)
 
+        # Return the camera target to the character at each scene start.
+        key(focus, start, (0, 0, 2.55))
         # Reveal the tree's internal water-transport system as a continuous camera dive.
         transition_type = str(item.get("transition_type", "cut")).lower()
         xylem_root.scale = (.001, .001, .001)
