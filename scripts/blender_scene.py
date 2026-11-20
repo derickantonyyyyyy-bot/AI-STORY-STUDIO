@@ -220,6 +220,27 @@ def main():
         camera.data.lens = base_lens
         camera.data.keyframe_insert(data_path="lens", frame=end)
 
+        # Storyboard-selected continuous camera transitions at each scene exit.
+        transition_type = str(item.get("transition_type", "cut")).lower()
+        transition_start = max(start, end - 12)
+        if transition_type == "whip_pan":
+            current_x = camera.location.x
+            key(camera, transition_start, (current_x, camera.location.y, camera.location.z))
+            key(camera, end - 3, (current_x + (2.8 if index % 2 == 0 else -2.8),
+                                  camera.location.y, camera.location.z))
+            key(camera, end, (current_x, camera.location.y, camera.location.z))
+        elif transition_type == "dolly_zoom":
+            base_y = camera.location.y
+            camera.data.lens = 42
+            camera.data.keyframe_insert(data_path="lens", frame=transition_start)
+            key(camera, transition_start, (camera.location.x, base_y, camera.location.z))
+            camera.data.lens = 24
+            camera.data.keyframe_insert(data_path="lens", frame=end - 3)
+            key(camera, end - 3, (camera.location.x, base_y + 2.2, camera.location.z))
+            camera.data.lens = 42
+            camera.data.keyframe_insert(data_path="lens", frame=end)
+            key(camera, end, (camera.location.x, base_y, camera.location.z))
+
         # Small head tilts reinforce the selected emotion without overacting.
         head_tilt = {
             "sad": 0.12, "worried": 0.10, "curious": -0.13,
