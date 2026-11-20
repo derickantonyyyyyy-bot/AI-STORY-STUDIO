@@ -143,3 +143,7 @@ blender -b -P scripts/blender_scene.py -- out/story-props.json out/blender-story
 ```
 
 The Blender executable must be available as `blender` in PowerShell's PATH. The prototype renders a 1080×1920, 30 FPS MP4 to `out/blender-story.mp4`. Rendering time depends heavily on your computer and Blender settings. This is a separate prototype command; the existing Remotion workflow remains unchanged while we validate the 3D renderer.
+
+### Emotion-led cinematic camera beats
+
+The storyboard now assigns each scene an emotion (neutral, happy, sad, surprised, worried, curious, determined, or awe). The Blender prototype uses that cue to track the character and add a timed close-up punch-in at the emotional beat, then ease back to the wider composition. Sad or worried moments receive a stronger close-up; lighter or neutral moments use a gentler lens change. This is an original short-form cinematic editing approach using general techniques such as motivated punch-ins and varied pacing, not a recreation of any one creator's exact style. Older storyboard JSON files remain usable because missing emotion values default to neutral.
