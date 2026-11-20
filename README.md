@@ -128,3 +128,18 @@ When Cloudflare credentials are configured, the renderer uses generated cinemati
 The integration uses `@cf/black-forest-labs/flux-1-schnell`. Cloudflare documents a daily free Workers AI allocation, but it is quota-limited, not unlimited. Usage above the free allocation may be billable on a paid Workers plan. Check the current [Workers AI pricing](https://developers.cloudflare.com/workers-ai/platform/pricing/) before enabling it. The generator creates up to six scene images for the current one-minute storyboard and does not automatically retry failed requests.
 
 The same character description is repeated in each image prompt to encourage visual consistency. Text-to-image generation does not guarantee a perfectly identical character between scenes.
+
+
+## Blender 3D prototype (new)
+
+The first Blender milestone is a real 3D scene prototype: a stylized forest set, a simple cartoon character built from 3D geometry, basic arm/body motion, cinematic lighting, and a slow camera move. It is an early visual foundation, not the finished reference-quality animation. Character lip-sync, detailed scene-specific sets, and sound are not implemented yet.
+
+1. Install Blender 4.2 or newer on your computer.
+2. Keep the API server running and generate the storyboard/video props using the normal workflow above. This creates `out/story-props.json`.
+3. From the project folder, run:
+
+```powershell
+blender -b -P scripts/blender_scene.py -- out/story-props.json out/blender-story.mp4
+```
+
+The Blender executable must be available as `blender` in PowerShell's PATH. The prototype renders a 1080×1920, 30 FPS MP4 to `out/blender-story.mp4`. Rendering time depends heavily on your computer and Blender settings. This is a separate prototype command; the existing Remotion workflow remains unchanged while we validate the 3D renderer.
