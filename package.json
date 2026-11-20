@@ -1,1 +1,28 @@
-{"name":"ai-story-studio","version":"0.1.0","private":true,"scripts":{"dev":"remotion studio src/index.ts","render":"remotion render src/index.ts StoryVideo out/story-video.mp4","typecheck":"tsc --noEmit"},"dependencies":{"@remotion/cli":"^4.0.0","react":"^18.2.0","react-dom":"^18.2.0","remotion":"^4.0.0"},"devDependencies":{"@types/react":"^18.2.0","@types/react-dom":"^18.2.0","typescript":"^5.4.0"}}
+{
+  "name": "ai-story-studio",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "remotion studio src/index.ts",
+    "server": "node server/index.js",
+    "render": "remotion render src/index.ts StoryVideo out/story-video.mp4",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "groq-sdk": "^0.30.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "zod": "^3.24.1",
+    "remotion": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "typescript": "^5.4.0"
+  }
+}
