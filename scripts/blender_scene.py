@@ -117,7 +117,9 @@ def main():
     scene.render.resolution_y = 1920
     scene.render.resolution_percentage = 100
     scene.render.fps = 30
-    scene.render.image_settings.file_format = "H264"
+    # Blender 5.x requires selecting VIDEO media before the FFMPEG format.
+    scene.render.image_settings.media_type = "VIDEO"
+    scene.render.image_settings.file_format = "FFMPEG"
     scene.render.ffmpeg.format = "MPEG4"
     scene.render.ffmpeg.codec = "H264"
     scene.render.filepath = output_path
