@@ -48,7 +48,7 @@ const child = spawn(command, [
   "StoryVideo",
   "out/story-video.mp4",
   `--props=${propsPath}`,
-], {stdio: "inherit"});
+], {stdio: "inherit", shell: process.platform === "win32"});
 
 child.on("error", (error) => {
   console.error("Could not start Remotion:", error.message);
