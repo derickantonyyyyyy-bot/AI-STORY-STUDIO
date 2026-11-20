@@ -46,7 +46,7 @@ const palettes = [
 ];
 
 const Tree: React.FC<{x: number; y: number; scale: number; color: string; sway: number; kind?: "pine" | "round"}> = ({x, y, scale, color, sway, kind = "round"}) => (
-  <g transform={\`translate(\${x} \${y}) scale(\${scale})\`}>
+  <g transform={`translate(${x} ${y}) scale(${scale})`}>
     <path d="M-9 0 L-5 -145 L7 -145 L12 0Z" fill="#654b38" />
     {kind === "pine" ? (
       <g fill={color}>
@@ -54,7 +54,7 @@ const Tree: React.FC<{x: number; y: number; scale: number; color: string; sway: 
         <path d="M0 -280 L0 -18" stroke="#b3c58b" strokeWidth="5" opacity=".28" />
       </g>
     ) : (
-      <g transform={\`rotate(\${sway} 0 -190)\`} fill={color}>
+      <g transform={`rotate(${sway} 0 -190)`} fill={color}>
         <circle cx="-45" cy="-205" r="67" />
         <circle cx="34" cy="-235" r="82" />
         <circle cx="82" cy="-175" r="62" />
@@ -70,7 +70,7 @@ const Tree: React.FC<{x: number; y: number; scale: number; color: string; sway: 
 const Lily: React.FC<{frame: number; entrance: number; accent: string; listening?: boolean}> = ({frame, entrance, accent, listening}) => {
   const bob = Math.sin(frame / 12) * 5;
   return (
-    <g transform={\`translate(280 \${1320 + (1 - entrance) * 100 + bob})\`}>
+    <g transform={`translate(280 ${1320 + (1 - entrance) * 100 + bob})`}>
       <ellipse cx="0" cy="8" rx="130" ry="25" fill="#071a18" opacity=".35" />
       <path d="M-48 -220 Q-88 -170 -91 -48 L-72 0 L72 0 L91 -48 Q85 -170 48 -220Z" fill="#d36d55" stroke="#f4c49a" strokeWidth="7" />
       <path d="M-47 -198 L-88 -105 L-115 -48" fill="none" stroke="#e6b18d" strokeWidth="22" strokeLinecap="round" />
@@ -100,7 +100,7 @@ const TalkingOak: React.FC<{frame: number; accent: string}> = ({frame, accent}) 
       <ellipse cx="47" cy="-260" rx="13" ry="19" fill="#f7e8bd" />
       <circle cx="-35" cy="-258" r="6" fill="#253d30" />
       <circle cx="47" cy="-258" r="6" fill="#253d30" />
-      <path d={\`M-22 -205 Q5 \${-205 + mouth} 28 -205\`} stroke="#2a211b" strokeWidth="11" fill="none" strokeLinecap="round" />
+      <path d={`M-22 -205 Q5 ${-205 + mouth} 28 -205`} stroke="#2a211b" strokeWidth="11" fill="none" strokeLinecap="round" />
       <path d="M-60 -300 Q-35 -320 -10 -302 M25 -302 Q55 -322 75 -300" stroke="#543c2c" strokeWidth="10" fill="none" strokeLinecap="round" />
       <circle cx="-145" cy="-425" r="12" fill={accent} opacity=".9" />
       <circle cx="175" cy="-480" r="9" fill={accent} opacity=".9" />
@@ -151,7 +151,7 @@ const SceneVisual: React.FC<{scene: StoryScene; index: number; title: string}> =
           <Tree x={930} y={1120} scale={1.55} color="#214b3b" sway={-2} kind="pine" />
           <Tree x={1100} y={1160} scale={1.3} color="#2e6448" sway={2} />
         </g>
-        <g transform={\`translate(\${drift} 0)\`}>
+        <g transform={`translate(${drift} 0)`}>
           <Tree x={80} y={1320} scale={2.1} color="#285d42" sway={Math.sin(frame / 18) * 3} />
           <Tree x={990} y={1320} scale={2.15} color="#285d42" sway={Math.sin(frame / 20) * -3} />
           <Tree x={485} y={1240} scale={1.05} color="#3c7951" sway={2} kind="pine" />
@@ -163,18 +163,18 @@ const SceneVisual: React.FC<{scene: StoryScene; index: number; title: string}> =
       </svg>
 
       <div style={{position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(5,18,20,.36) 0%, transparent 34%, transparent 58%, rgba(4,15,15,.8) 100%)"}} />
-      <div style={{position: "absolute", top: 78, left: 68, right: 68, opacity: interpolate(frame, [0, 16], [0, 1], {extrapolateRight: "clamp"}), transform: \`translateY(\${(1 - entrance) * 24}px)\`}}>
+      <div style={{position: "absolute", top: 78, left: 68, right: 68, opacity: interpolate(frame, [0, 16], [0, 1], {extrapolateRight: "clamp"}), transform: `translateY(${(1 - entrance) * 24}px)`}}>
         <div style={{fontSize: 22, letterSpacing: 7, color: palette.light, fontWeight: 800}}>AI STORY STUDIO  •  {String(scene.scene_number).padStart(2, "0")}</div>
         <div style={{fontSize: 58, fontWeight: 900, marginTop: 18, lineHeight: 1.05, textShadow: "0 5px 24px rgba(0,0,0,.3)"}}>{title}</div>
       </div>
-      <div style={{position: "absolute", left: 54, right: 54, bottom: 112, padding: "34px 36px 38px", borderRadius: 30, background: "linear-gradient(135deg, rgba(8,25,25,.88), rgba(12,35,31,.72))", border: "1px solid rgba(255,255,255,.25)", boxShadow: "0 24px 80px rgba(0,0,0,.34)", backdropFilter: "blur(12px)", transform: \`translateY(\${(1 - entrance) * 42}px)\`}}>
+      <div style={{position: "absolute", left: 54, right: 54, bottom: 112, padding: "34px 36px 38px", borderRadius: 30, background: "linear-gradient(135deg, rgba(8,25,25,.88), rgba(12,35,31,.72))", border: "1px solid rgba(255,255,255,.25)", boxShadow: "0 24px 80px rgba(0,0,0,.34)", backdropFilter: "blur(12px)", transform: `translateY(${(1 - entrance) * 42}px)`}}>
         <div style={{fontSize: 19, color: palette.light, letterSpacing: 4, fontWeight: 800, marginBottom: 14}}>SCENE {scene.scene_number}  /  {scene.duration_seconds}s</div>
         <div style={{fontSize: 29, fontWeight: 750, lineHeight: 1.25}}>{scene.visual_description}</div>
         {scene.narration_line ? <div style={{fontSize: 23, lineHeight: 1.35, color: "#e4eee7", marginTop: 20}}>“{scene.narration_line}”</div> : null}
         {scene.dialogue?.[0] ? <div style={{fontSize: 21, color: palette.light, marginTop: 16}}>{scene.dialogue[0].character}: “{scene.dialogue[0].line}”</div> : null}
       </div>
       <div style={{position: "absolute", bottom: 48, left: 64, right: 64, height: 6, borderRadius: 20, background: "rgba(255,255,255,.24)", overflow: "hidden"}}>
-        <div style={{width: \`\${progress}%\`, height: "100%", background: palette.light, boxShadow: \`0 0 18px \${palette.light}\`}} />
+        <div style={{width: `${progress}%`, height: "100%", background: palette.light, boxShadow: `0 0 18px ${palette.light}`}} />
       </div>
     </AbsoluteFill>
   );
