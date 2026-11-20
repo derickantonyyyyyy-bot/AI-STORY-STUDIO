@@ -1,6 +1,7 @@
 import {mkdir, writeFile} from "node:fs/promises";
 import {spawn} from "node:child_process";
 import {join} from "node:path";
+import {generateArtwork} from "./generate-artwork.js";
 
 const [genre, ...premiseParts] = process.argv.slice(2);
 const premise = premiseParts.join(" ").trim();
@@ -35,8 +36,15 @@ if (totalSeconds !== 60) {
 
 await mkdir("out", {recursive: true});
 const propsPath = join("out", "story-props.json");
-await writeFile(propsPath, JSON.stringify({story: result.story}, null, 2), "utf8");
 console.log(`Generated: ${result.story.title}`);
+let artwork = {enabled: false, generated: 0};
+try {
+  artwork = await generateArtwork(result.story);
+} catch (error) {
+  console.error("Artwork generation failed:", error.message);
+  console.error("The video will continue with the built-in renderer artwork.");
+}
+await writeFile(propsPath, JSON.stringify({story: result.story, artworkEnabled: artwork.enabled}, null, 2), "utf8");
 console.log(`Saved storyboard props to ${propsPath}`);
 console.log("Starting Remotion render...");
 
