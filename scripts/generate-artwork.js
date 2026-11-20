@@ -26,9 +26,14 @@ function makePrompt(story, scene, index) {
 }
 
 export async function generateArtwork(story) {
-  if ((process.env.IMAGE_PROVIDER || "cloudflare").toLowerCase() === "none") {
+  const provider = (process.env.IMAGE_PROVIDER || "cloudflare").toLowerCase();
+  if (provider === "none") {
     console.log("Image generation disabled (IMAGE_PROVIDER=none). Using the built-in renderer artwork.");
     return {enabled: false, generated: 0};
+  }
+
+  if (provider !== "cloudflare") {
+    throw new Error(`Unsupported IMAGE_PROVIDER "${provider}". Use "cloudflare" or "none".`);
   }
 
   const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
@@ -39,7 +44,8 @@ export async function generateArtwork(story) {
     return {enabled: false, generated: 0};
   }
 
-  const steps = Math.min(8, Math.max(1, Number(process.env.CLOUDFLARE_IMAGE_STEPS || 4)));
+  const requestedSteps = Number.parseInt(process.env.CLOUDFLARE_IMAGE_STEPS || "4", 10);
+  const steps = Number.isFinite(requestedSteps) ? Math.min(8, Math.max(1, requestedSteps)) : 4;
   const outputDir = join("public", "generated");
   await mkdir(outputDir, {recursive: true});
   const endpoint = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/ai/run/${MODEL}`;
