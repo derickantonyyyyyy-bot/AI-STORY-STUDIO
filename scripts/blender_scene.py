@@ -117,7 +117,7 @@ def main():
     scene.render.resolution_y = 1920
     scene.render.resolution_percentage = 100
     scene.render.fps = 30
-    scene.render.image_settings.file_format = "FFMPEG"
+    scene.render.image_settings.file_format = "H264"
     scene.render.ffmpeg.format = "MPEG4"
     scene.render.ffmpeg.codec = "H264"
     scene.render.filepath = output_path
