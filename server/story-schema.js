@@ -15,6 +15,7 @@ export const storyResponseSchema = z.object({
     duration_seconds: z.number().int().positive(),
     visual_description: z.string().min(1).max(600),
     emotion: z.enum(["neutral", "happy", "sad", "surprised", "worried", "curious", "determined", "awe"]),
+    transition_type: z.enum(["cut", "whip_pan", "dolly_zoom", "xray_reveal", "object_morph", "exploded_view", "cross_section"]),
     camera_motion: z.string().min(1).max(160),
     transition: z.string().min(1).max(160),
     narration_line: z.string().max(700),
@@ -44,6 +45,7 @@ export const storyJsonSchema = {
           duration_seconds: {type: "integer"},
           visual_description: {type: "string"},
           emotion: {type: "string", enum: ["neutral", "happy", "sad", "surprised", "worried", "curious", "determined", "awe"]},
+          transition_type: {type: "string", enum: ["cut", "whip_pan", "dolly_zoom", "xray_reveal", "object_morph", "exploded_view", "cross_section"]},
           camera_motion: {type: "string"},
           transition: {type: "string"},
           narration_line: {type: "string"},
@@ -61,7 +63,7 @@ export const storyJsonSchema = {
             }
           }
         },
-        required: ["scene_number", "duration_seconds", "visual_description", "emotion", "camera_motion", "transition", "narration_line", "dialogue"],
+        required: ["scene_number", "duration_seconds", "visual_description", "emotion", "transition_type", "camera_motion", "transition", "narration_line", "dialogue"],
         additionalProperties: false
       }
     }
