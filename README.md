@@ -147,3 +147,7 @@ The Blender executable must be available as `blender` in PowerShell's PATH. The 
 ### Emotion-led cinematic camera beats
 
 The storyboard now assigns each scene an emotion (neutral, happy, sad, surprised, worried, curious, determined, or awe). The Blender prototype uses that cue to track the character and add a timed close-up punch-in at the emotional beat, then ease back to the wider composition. Sad or worried moments receive a stronger close-up; lighter or neutral moments use a gentler lens change. This is an original short-form cinematic editing approach using general techniques such as motivated punch-ins and varied pacing, not a recreation of any one creator's exact style. Older storyboard JSON files remain usable because missing emotion values default to neutral.
+
+### Cinematic transition planning
+
+Each Groq storyboard scene now includes a `transition_type`: `cut`, `whip_pan`, `dolly_zoom`, `xray_reveal`, `object_morph`, `exploded_view`, or `cross_section`. The Blender prototype currently animates the camera for `whip_pan` and `dolly_zoom`; other educational reveal types are storyboard metadata until dedicated layered character/prop assets and transition rigs are added. This prevents the renderer from pretending a true X-ray, morph, exploded view, or cross-section exists when the current scene contains no suitable geometry. For anatomy education, the intended future treatment is simplified, non-graphic translucent layers; object and plant cross-sections are also supported concepts.
