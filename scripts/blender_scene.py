@@ -105,8 +105,14 @@ def main():
 
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
-    bpy.context.scene.render.engine = "BLENDER_EEVEE_NEXT"
     scene = bpy.context.scene
+    available_engines = {item.identifier for item in scene.render.bl_rna.properties["engine"].enum_items}
+    if "BLENDER_EEVEE_NEXT" in available_engines:
+        scene.render.engine = "BLENDER_EEVEE_NEXT"
+    elif "BLENDER_EEVEE" in available_engines:
+        scene.render.engine = "BLENDER_EEVEE"
+    else:
+        raise SystemExit(f"No supported Eevee render engine found. Available engines: {sorted(available_engines)}")
     scene.render.resolution_x = 1080
     scene.render.resolution_y = 1920
     scene.render.resolution_percentage = 100
@@ -127,8 +133,6 @@ def main():
         mat("Leaves_Mid", (.08, .31, .16)),
         mat("Leaves_Light", (.17, .39, .20)),
     ]
-    ground = bpy.data.objects.new("Ground", bpy.data.meshes.new("GroundMesh"))
-    bpy.context.collection.objects.link(ground)
     bpy.ops.mesh.primitive_plane_add(size=200, location=(0, 0, 0))
     ground = bpy.context.object
     ground.name = "ForestGround"
@@ -143,7 +147,6 @@ def main():
             tree_index += 1
 
     root, arms, head = build_character()
-    # Camera looks toward the character from slightly above, leaving room for the environment.
     bpy.ops.object.camera_add(location=(0, -11, 4.0))
     camera = bpy.context.object
     camera.name = "StoryCamera"
@@ -172,7 +175,6 @@ def main():
     for index, item in enumerate(scenes):
         duration = int(item.get("duration_seconds", 10)) * scene.render.fps
         start, end = cursor, cursor + duration - 1
-        # A gentle walk-in and small arm gestures give the character life.
         key(root, start, (0, 0, 0), (0, 0, 0))
         key(root, start + duration // 2, (0, .45, 0), (0, 0, .04 if index % 2 == 0 else -.04))
         key(root, end, (0, .9, 0), (0, 0, 0))
@@ -182,18 +184,12 @@ def main():
             key(arm, start + duration // 3, rotation=(base + .55, 0, 0))
             key(arm, start + (2 * duration) // 3, rotation=(base - .28, 0, 0))
             key(arm, end, rotation=(base, 0, 0))
-        # Slow camera push-in, with a small lateral drift between story beats.
         key(camera, start, (0, -11, 4.0))
         key(camera, end, ((-0.45 if index % 2 else 0.45), -9.2, 3.7))
         cursor += duration
 
-    # Smooth animation curves.
-    for obj in [root, camera] + arms:
-        if obj.animation_data and obj.animation_data.action:
-            for fc in obj.animation_data.action.fcurves:
-                for point in fc.keyframe_points:
-                    point.interpolation = "BEZIER"
-
+    # Blender 5.2 uses layered actions; default keyframe interpolation is already Bezier.
+    # Avoid legacy Action.fcurves access so this script works across Blender versions.
     scene.render.filepath = output_path
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     bpy.ops.render.render(animation=True)
