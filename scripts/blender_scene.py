@@ -155,6 +155,15 @@ def main():
     target = Vector((0, 3, 2.0))
     camera.rotation_euler = (target - camera.location).to_track_quat("-Z", "Y").to_euler()
     camera.data.lens = 42
+    # Keep emotional close-ups aimed at the character instead of empty forest space.
+    focus = bpy.data.objects.new("CharacterFocus", None)
+    bpy.context.collection.objects.link(focus)
+    focus.parent = root
+    focus.location = (0, 0, 2.55)
+    track = camera.constraints.new(type="TRACK_TO")
+    track.target = focus
+    track.track_axis = "TRACK_NEGATIVE_Z"
+    track.up_axis = "UP_Y"
     scene.camera = camera
 
     bpy.ops.object.light_add(type="AREA", location=(-5, -3, 9))
@@ -188,6 +197,38 @@ def main():
             key(arm, end, rotation=(base, 0, 0))
         key(camera, start, (0, -11, 4.0))
         key(camera, end, ((-0.45 if index % 2 else 0.45), -9.2, 3.7))
+
+        # Emotion-led punch-in at the scene's dramatic beat, followed by a release.
+        emotion = str(item.get("emotion", "neutral")).lower()
+        emotion_lenses = {
+            "neutral": 42, "happy": 48, "sad": 64, "surprised": 60,
+            "worried": 62, "curious": 54, "determined": 52, "awe": 56,
+        }
+        base_lens = 42
+        close_lens = emotion_lenses.get(emotion, base_lens)
+        beat = start + duration // 2
+        punch_frame = max(start + 2, beat - 5)
+        release_frame = min(end - 2, beat + max(8, duration // 5))
+        camera.data.lens = base_lens
+        camera.data.keyframe_insert(data_path="lens", frame=start)
+        camera.data.lens = base_lens
+        camera.data.keyframe_insert(data_path="lens", frame=punch_frame)
+        camera.data.lens = close_lens
+        camera.data.keyframe_insert(data_path="lens", frame=beat)
+        camera.data.lens = close_lens
+        camera.data.keyframe_insert(data_path="lens", frame=release_frame)
+        camera.data.lens = base_lens
+        camera.data.keyframe_insert(data_path="lens", frame=end)
+
+        # Small head tilts reinforce the selected emotion without overacting.
+        head_tilt = {
+            "sad": 0.12, "worried": 0.10, "curious": -0.13,
+            "surprised": -0.08, "awe": -0.10, "happy": 0.04,
+            "determined": 0.02, "neutral": 0.0,
+        }.get(emotion, 0.0)
+        key(head, start, rotation=(head_tilt * 0.35, 0, 0))
+        key(head, beat, rotation=(head_tilt, 0, 0))
+        key(head, end, rotation=(head_tilt * 0.35, 0, 0))
         cursor += duration
 
     # Blender 5.2 uses layered actions; default keyframe interpolation is already Bezier.
