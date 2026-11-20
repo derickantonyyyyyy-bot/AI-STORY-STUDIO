@@ -94,6 +94,55 @@ def build_character():
         obj.parent = root
     return root, [o for o in parts if o.name.startswith("Arm_")], head
 
+
+def build_xylem_reveal():
+    """Build a clean, non-graphic educational tree cross-section with animated water beads."""
+    root = bpy.data.objects.new("XylemRevealRoot", None)
+    bpy.context.collection.objects.link(root)
+    bark = mat("Xylem_CutBark", (.30, .14, .065))
+    wood = mat("Xylem_Wood", (.72, .48, .24))
+    ring_mat = mat("Xylem_GrowthRings", (.38, .22, .10))
+    tube_mat = mat("Xylem_Tubes", (.08, .48, .62), .35)
+    water_mat = mat("Xylem_Water", (.12, .72, 1.0), .2)
+
+    # A circular trunk cross-section faces the incoming camera.
+    bpy.ops.mesh.primitive_cylinder_add(vertices=64, radius=1.05, depth=.18, location=(0, 0, 0))
+    disk = bpy.context.object
+    disk.name = "Tree_CrossSection_Wood"
+    disk.rotation_euler[0] = math.radians(90)
+    assign(disk, wood)
+    disk.parent = root
+    disk.matrix_parent_inverse = root.matrix_world.inverted()
+
+    bpy.ops.mesh.primitive_torus_add(major_radius=.84, minor_radius=.035, major_segments=64, minor_segments=12, location=(0, -.105, 0))
+    ring = bpy.context.object
+    ring.name = "Tree_Growth_Ring"
+    ring.rotation_euler[0] = math.radians(90)
+    assign(ring, ring_mat)
+    ring.parent = root
+    ring.matrix_parent_inverse = root.matrix_world.inverted()
+
+    # Parallel xylem vessels sit behind the cut surface.
+    for i, x in enumerate([-.62, -.31, 0, .31, .62]):
+        bpy.ops.mesh.primitive_cylinder_add(vertices=24, radius=.075, depth=2.5, location=(x, .42, 1.35))
+        tube = bpy.context.object
+        tube.name = f"Xylem_Vessel_{i+1}"
+        assign(tube, tube_mat)
+        tube.parent = root
+        tube.matrix_parent_inverse = root.matrix_world.inverted()
+
+    beads = []
+    for i, x in enumerate([-.62, -.31, 0, .31, .62]):
+        bead = uv_sphere(f"Water_Drop_{i+1}", (x, .20, .25 + (i % 2) * .25), (.105, .105, .105), water_mat)
+        bead.parent = root
+        bead.matrix_parent_inverse = root.matrix_world.inverted()
+        beads.append(bead)
+
+    focus = bpy.data.objects.new("XylemRevealFocus", None)
+    bpy.context.collection.objects.link(focus)
+    focus.location = (0, 3.0, 1.25)
+    return root, focus, beads
+
 def main():
     props_path, output_path = args_after_dashes()
     with open(props_path, "r", encoding="utf-8") as handle:
@@ -149,6 +198,7 @@ def main():
             tree_index += 1
 
     root, arms, head = build_character()
+    xylem_root, xylem_focus, water_beads = build_xylem_reveal()
     bpy.ops.object.camera_add(location=(0, -11, 4.0))
     camera = bpy.context.object
     camera.name = "StoryCamera"
@@ -158,8 +208,7 @@ def main():
     # Keep emotional close-ups aimed at the character instead of empty forest space.
     focus = bpy.data.objects.new("CharacterFocus", None)
     bpy.context.collection.objects.link(focus)
-    focus.parent = root
-    focus.location = (0, 0, 2.55)
+    focus.location = (0, 3, 2.0)
     track = camera.constraints.new(type="TRACK_TO")
     track.target = focus
     track.track_axis = "TRACK_NEGATIVE_Z"
@@ -220,8 +269,32 @@ def main():
         camera.data.lens = base_lens
         camera.data.keyframe_insert(data_path="lens", frame=end)
 
-        # Storyboard-selected continuous camera transitions at each scene exit.
+        # Reveal the tree's internal water-transport system as a continuous camera dive.
         transition_type = str(item.get("transition_type", "cut")).lower()
+        xylem_root.scale = (.001, .001, .001)
+        xylem_root.keyframe_insert(data_path="scale", frame=start)
+        if transition_type in ("xray_reveal", "cross_section"):
+            reveal_frame = min(end - 2, start + 18)
+            xylem_root.scale = (1, 1, 1)
+            xylem_root.keyframe_insert(data_path="scale", frame=reveal_frame)
+            xylem_root.keyframe_insert(data_path="scale", frame=end)
+            key(camera, start, (0, -11, 4.0))
+            key(camera, reveal_frame, (0, .25, 2.8))
+            key(camera, end, (0, .10, 2.8))
+            key(focus, start, (0, 3.0, 2.0))
+            key(focus, reveal_frame, (0, 3.0, 1.25))
+            key(focus, end, (0, 3.0, 1.25))
+            camera.data.lens = 24
+            camera.data.keyframe_insert(data_path="lens", frame=reveal_frame)
+            camera.data.lens = 38
+            camera.data.keyframe_insert(data_path="lens", frame=min(end, reveal_frame + 10))
+            for bead_i, bead in enumerate(water_beads):
+                z0 = .20 + (bead_i % 2) * .25
+                key(bead, reveal_frame, (bead.location.x, bead.location.y, z0))
+                key(bead, min(end, reveal_frame + 42), (bead.location.x, bead.location.y, z0 + 1.75))
+        else:
+            xylem_root.keyframe_insert(data_path="scale", frame=end)
+
         transition_start = max(start, end - 12)
         if transition_type == "whip_pan":
             current_x = camera.location.x
