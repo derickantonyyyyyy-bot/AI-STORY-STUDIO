@@ -7,7 +7,8 @@
     "dev": "remotion studio src/index.ts",
     "server": "node server/index.js",
     "render": "remotion render src/index.ts StoryVideo out/story-video.mp4",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "create:video": "node scripts/create-video.js"
   },
   "dependencies": {
     "@remotion/cli": "^4.0.0",
