@@ -1,6 +1,8 @@
 import React from "react";
 import {
   AbsoluteFill,
+  Img,
+  staticFile,
   Sequence,
   interpolate,
   spring,
@@ -34,6 +36,7 @@ export type Story = {
 
 export type StoryVideoProps = {
   story: Story;
+  artworkEnabled?: boolean;
 };
 
 const palettes = [
@@ -108,7 +111,7 @@ const TalkingOak: React.FC<{frame: number; accent: string}> = ({frame, accent}) 
   );
 };
 
-const SceneVisual: React.FC<{scene: StoryScene; index: number; title: string}> = ({scene, index, title}) => {
+const SceneVisual: React.FC<{scene: StoryScene; index: number; title: string; artworkEnabled: boolean}> = ({scene, index, title, artworkEnabled}) => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
   const entrance = spring({frame, fps, config: {damping: 18, stiffness: 85}});
@@ -125,6 +128,19 @@ const SceneVisual: React.FC<{scene: StoryScene; index: number; title: string}> =
 
   return (
     <AbsoluteFill style={{overflow: "hidden", color: "#fff", fontFamily: "Arial, sans-serif", background: palette.deep}}>
+      {artworkEnabled ? (
+        <Img
+          src={staticFile(`generated/scene-${String(scene.scene_number).padStart(2, "0")}.jpg`)}
+          style={{
+            position: "absolute",
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            transform: `scale(${1.02 + (frame / (scene.duration_seconds * fps)) * 0.07})`,
+            filter: "saturate(1.08) contrast(1.04)"
+          }}
+        />
+      ) : (
       <svg width="100%" height="100%" viewBox="0 0 1080 1920" preserveAspectRatio="xMidYMid slice" style={{position: "absolute", inset: 0}}>
         <defs>
           <linearGradient id="forestSky" x1="0" y1="0" x2="0" y2="1">
@@ -161,6 +177,7 @@ const SceneVisual: React.FC<{scene: StoryScene; index: number; title: string}> =
         {particles.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r={p.r} fill={palette.light} opacity={.2 + (i % 4) * .12} />)}
         <rect width="1080" height="1920" fill="none" stroke="rgba(255,255,255,.12)" strokeWidth="3" />
       </svg>
+      )}
 
       <div style={{position: "absolute", inset: 0, background: "linear-gradient(180deg, rgba(5,18,20,.36) 0%, transparent 34%, transparent 58%, rgba(4,15,15,.8) 100%)"}} />
       <div style={{position: "absolute", top: 78, left: 68, right: 68, opacity: interpolate(frame, [0, 16], [0, 1], {extrapolateRight: "clamp"}), transform: `translateY(${(1 - entrance) * 24}px)`}}>
@@ -180,7 +197,7 @@ const SceneVisual: React.FC<{scene: StoryScene; index: number; title: string}> =
   );
 };
 
-export const StoryVideo: React.FC<StoryVideoProps> = ({story}) => {
+export const StoryVideo: React.FC<StoryVideoProps> = ({story, artworkEnabled = false}) => {
   let startFrame = 0;
   return (
     <AbsoluteFill style={{backgroundColor: "#10251f"}}>
@@ -188,7 +205,7 @@ export const StoryVideo: React.FC<StoryVideoProps> = ({story}) => {
         const from = startFrame;
         const durationInFrames = scene.duration_seconds * 30;
         startFrame += durationInFrames;
-        return <Sequence key={scene.scene_number} from={from} durationInFrames={durationInFrames}><SceneVisual scene={scene} index={index} title={story.title} /></Sequence>;
+        return <Sequence key={scene.scene_number} from={from} durationInFrames={durationInFrames}><SceneVisual scene={scene} index={index} title={story.title} artworkEnabled={artworkEnabled} /></Sequence>;
       })}
     </AbsoluteFill>
   );
