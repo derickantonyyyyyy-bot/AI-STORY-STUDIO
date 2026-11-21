@@ -267,7 +267,28 @@ def main():
     tunnel_radius = 0.31
     tunnel_ring_mat = material("Vessel_Wall_Rings", (0.025, 0.19, 0.24), 0.38, metallic=0.12)
     tunnel_fibre_mat = material("Vessel_Inner_Fibres", (0.07, 0.39, 0.43), 0.42)
-    # Repeating open annular ribs leave the central lumen unobstructed.
+    # Continuous inner vessel wall: an open-ended cylindrical surface keeps
+    # the macro view enclosed instead of exposing the dark studio through gaps.
+    wall_verts = []
+    wall_faces = []
+    wall_segments = 96
+    for yy in (tunnel_y_start, tunnel_y_end):
+        for j in range(wall_segments):
+            a = 2.0 * math.pi * j / wall_segments
+            wall_verts.append((math.cos(a) * (tunnel_radius - 0.018), yy,
+                               3.28 + math.sin(a) * (tunnel_radius - 0.018)))
+    for j in range(wall_segments):
+        jn = (j + 1) % wall_segments
+        wall_faces.append((j, jn, wall_segments + jn, wall_segments + j))
+    wall_mesh = bpy.data.meshes.new("Vessel_Inner_Wall_Mesh")
+    wall_mesh.from_pydata(wall_verts, [], wall_faces)
+    wall_mesh.materials.append(tunnel_ring_mat)
+    wall_obj = bpy.data.objects.new("Continuous_Vessel_Inner_Wall", wall_mesh)
+    bpy.context.collection.objects.link(wall_obj)
+    for poly in wall_mesh.polygons:
+        poly.use_smooth = True
+
+    # Repeating annular ribs remain visible against the continuous inner wall.
     for k in range(18):
         yy = tunnel_y_start + k * 0.49
         bpy.ops.mesh.primitive_torus_add(
@@ -300,9 +321,8 @@ def main():
 
     # No floating 3D labels: clean, synchronized captions will be composited later.
 
-    # V5 camera journey: establish the tree, approach the opening, and enter
-    # the vessel lumen for the final macro view.
-    # then finish on a readable close-up of the exposed xylem vessels.
+    # V6 camera journey: preserve the V5 establishing shot and trunk approach,
+    # then travel only partway into the vessel so the final tunnel remains readable.
     bpy.ops.object.camera_add(location=(0,-15.8,4.15))
     camera = bpy.context.object
     camera.name = "Showcase_Camera"
@@ -314,7 +334,7 @@ def main():
     track = camera.constraints.new(type="TRACK_TO")
     track.target = target
     track.track_axis = "TRACK_NEGATIVE_Z"
-    track.up_axis = "UP_Y"
+    track.up_axis = "UP_Z"
     scene.camera = camera
 
     # A gradual, continuous dolly-in; the final target sits on the actual
@@ -322,18 +342,18 @@ def main():
     key_location(camera, 1, (0,-18.2,4.45))
     key_location(camera, 105, (0,-15.8,4.05))
     key_location(camera, 210, (0,-8.2,3.55))
-    key_location(camera, 275, (0,-0.45,3.28))
-    key_location(camera, END, (0,2.0,3.28))
+    key_location(camera, 275, (0,-0.35,3.28))
+    key_location(camera, END, (0,1.25,3.28))
     for frame, loc in [
         (1,(0,0.0,2.45)),
         (105,(0,-0.12,2.72)),
         (210,(0,-0.55,3.05)),
         (275,(0,3.0,3.28)),
-        (END,(0,7.2,3.28))
+        (END,(0,5.7,3.28))
     ]:
         target.location = loc
         target.keyframe_insert(data_path="location", frame=frame)
-    for frame,lens in [(1,38),(105,40),(210,48),(275,42),(END,38)]:
+    for frame,lens in [(1,38),(105,40),(210,48),(275,48),(END,55)]:
         camera.data.lens = lens
         camera.data.keyframe_insert(data_path="lens", frame=frame)
 
@@ -362,7 +382,7 @@ def main():
 
     scene.camera.data.dof.use_dof = True
     scene.camera.data.dof.focus_object = target
-    scene.camera.data.dof.aperture_fstop = 11.0
+    scene.camera.data.dof.aperture_fstop = 16.0
     scene.render.filepath = output
     os.makedirs(os.path.dirname(output), exist_ok=True)
     bpy.ops.render.render(animation=True)
