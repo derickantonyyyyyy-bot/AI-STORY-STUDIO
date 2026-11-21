@@ -259,9 +259,49 @@ def main():
                 drop.location.z = z0 + dz
                 drop.keyframe_insert(data_path="location", frame=frame + i*3 + j*5)
 
+    # V5 internal-vessel macro tunnel. This is a clean educational cutaway:
+    # an open ring-and-fibre structure aligned with the camera's forward path.
+    # It visually continues the xylem from the trunk window into a vessel lumen.
+    tunnel_y_start = -0.72
+    tunnel_y_end = 8.0
+    tunnel_radius = 0.31
+    tunnel_ring_mat = material("Vessel_Wall_Rings", (0.025, 0.19, 0.24), 0.38, metallic=0.12)
+    tunnel_fibre_mat = material("Vessel_Inner_Fibres", (0.07, 0.39, 0.43), 0.42)
+    # Repeating open annular ribs leave the central lumen unobstructed.
+    for k in range(18):
+        yy = tunnel_y_start + k * 0.49
+        bpy.ops.mesh.primitive_torus_add(
+            major_radius=tunnel_radius, minor_radius=0.022,
+            major_segments=48, minor_segments=8,
+            location=(0, yy, 3.28), rotation=(math.radians(90), 0, 0)
+        )
+        apply_mat(bpy.context.object, tunnel_ring_mat)
+        bpy.context.object.name = "Internal_Vessel_Rib"
+    # Four longitudinal fibres define the inside of the vessel.
+    for angle in [0, math.pi/2, math.pi, 3*math.pi/2]:
+        x = math.cos(angle) * tunnel_radius
+        z = 3.28 + math.sin(angle) * tunnel_radius
+        curve_tube(
+            "Longitudinal_Vessel_Fibre",
+            [(x, tunnel_y_start + n*(tunnel_y_end-tunnel_y_start)/5, z) for n in range(6)],
+            0.018, tunnel_fibre_mat
+        )
+    # A soft luminous central flow and staggered droplets move deeper through the lumen.
+    flow_mat = emissive("Xylem_Flow_Glow", (0.025, 0.32, 0.62), 0.65)
+    curve_tube("Central_Water_Flow", [(0, tunnel_y_start+0.1, 3.28),
+               (0, 1.2, 3.28), (0, 4.2, 3.28), (0, tunnel_y_end-0.2, 3.28)],
+               0.035, flow_mat)
+    for i in range(7):
+        drop = uv("Macro_Water_Droplet", (0, 0, 3.28), (0.055, 0.09, 0.055), water, 24, 16)
+        for frame, yy in [(1, -0.45 + i*0.28), (120, 1.0 + i*0.28),
+                          (240, 3.0 + i*0.28), (END, 6.5 + i*0.18)]:
+            drop.location = (0, yy, 3.28 + 0.035*math.sin(i))
+            drop.keyframe_insert(data_path="location", frame=frame)
+
     # No floating 3D labels: clean, synchronized captions will be composited later.
 
-    # V4 camera journey: establish the whole tree, approach the trunk,
+    # V5 camera journey: establish the tree, approach the opening, and enter
+    # the vessel lumen for the final macro view.
     # then finish on a readable close-up of the exposed xylem vessels.
     bpy.ops.object.camera_add(location=(0,-15.8,4.15))
     camera = bpy.context.object
@@ -281,17 +321,19 @@ def main():
     # front-facing xylem window rather than the trunk's centre.
     key_location(camera, 1, (0,-18.2,4.45))
     key_location(camera, 105, (0,-15.8,4.05))
-    key_location(camera, 210, (0,-11.5,3.75))
-    key_location(camera, END, (0,-8.4,3.58))
+    key_location(camera, 210, (0,-8.2,3.55))
+    key_location(camera, 275, (0,-0.45,3.28))
+    key_location(camera, END, (0,2.0,3.28))
     for frame, loc in [
         (1,(0,0.0,2.45)),
         (105,(0,-0.12,2.72)),
-        (210,(0,-0.42,3.05)),
-        (END,(0,-0.62,3.28))
+        (210,(0,-0.55,3.05)),
+        (275,(0,3.0,3.28)),
+        (END,(0,7.2,3.28))
     ]:
         target.location = loc
         target.keyframe_insert(data_path="location", frame=frame)
-    for frame,lens in [(1,38),(105,40),(210,48),(END,55)]:
+    for frame,lens in [(1,38),(105,40),(210,48),(275,42),(END,38)]:
         camera.data.lens = lens
         camera.data.keyframe_insert(data_path="lens", frame=frame)
 
