@@ -205,6 +205,7 @@ def main():
     target = Vector((0, 3, 2.0))
     camera.rotation_euler = (target - camera.location).to_track_quat("-Z", "Y").to_euler()
     camera.data.lens = 42
+    camera.data.clip_start = 0.001
     # Keep emotional close-ups aimed at the character instead of empty forest space.
     focus = bpy.data.objects.new("CharacterFocus", None)
     bpy.context.collection.objects.link(focus)
@@ -275,21 +276,35 @@ def main():
         transition_type = str(item.get("transition_type", "cut")).lower()
         xylem_root.scale = (.001, .001, .001)
         xylem_root.keyframe_insert(data_path="scale", frame=start)
-        if transition_type in ("xray_reveal", "cross_section"):
-            reveal_frame = min(end - 2, start + 18)
+        if transition_type in ("xray_reveal", "cross_section", "infinite_zoom", "orthographic_slice"):
+            # Keep the cutaway in front of the lens. The previous prototype passed
+            # the camera through the disk, leaving it behind the camera.
+            reveal_frame = min(end - 2, start + 22)
+            settle_frame = min(end, reveal_frame + 12)
             xylem_root.scale = (1, 1, 1)
             xylem_root.keyframe_insert(data_path="scale", frame=reveal_frame)
             xylem_root.keyframe_insert(data_path="scale", frame=end)
             key(camera, start, (0, -11, 4.0))
-            key(camera, reveal_frame, (0, .25, 2.8))
-            key(camera, end, (0, .10, 2.8))
-            key(focus, start, (0, 3.0, 2.0))
-            key(focus, reveal_frame, (0, 3.0, 1.25))
-            key(focus, end, (0, 3.0, 1.25))
-            camera.data.lens = 24
-            camera.data.keyframe_insert(data_path="lens", frame=reveal_frame)
-            camera.data.lens = 38
-            camera.data.keyframe_insert(data_path="lens", frame=min(end, reveal_frame + 10))
+            key(camera, reveal_frame, (0, -3.8, 1.55))
+            key(camera, settle_frame, (0, -3.1, 1.45))
+            key(camera, end, (0, -3.1, 1.45))
+            key(focus, start, (0, 0, 2.2))
+            key(focus, reveal_frame, (0, 0, 1.25))
+            key(focus, end, (0, 0, 1.25))
+            if transition_type == "orthographic_slice":
+                camera.data.type = "ORTHO"
+                camera.data.ortho_scale = 3.4
+                camera.data.keyframe_insert(data_path="type", frame=reveal_frame)
+                camera.data.keyframe_insert(data_path="ortho_scale", frame=reveal_frame)
+                camera.data.ortho_scale = 2.8
+                camera.data.keyframe_insert(data_path="ortho_scale", frame=settle_frame)
+            else:
+                camera.data.type = "PERSP"
+                camera.data.keyframe_insert(data_path="type", frame=reveal_frame)
+                camera.data.lens = 18
+                camera.data.keyframe_insert(data_path="lens", frame=reveal_frame)
+                camera.data.lens = 32
+                camera.data.keyframe_insert(data_path="lens", frame=settle_frame)
             for bead_i, bead in enumerate(water_beads):
                 z0 = .20 + (bead_i % 2) * .25
                 key(bead, reveal_frame, (bead.location.x, bead.location.y, z0))
@@ -298,12 +313,32 @@ def main():
             xylem_root.keyframe_insert(data_path="scale", frame=end)
 
         transition_start = max(start, end - 12)
-        if transition_type == "whip_pan":
+        if transition_type in ("whip_pan", "match_whip_pan"):
             current_x = camera.location.x
+            direction = 1 if index % 2 == 0 else -1
             key(camera, transition_start, (current_x, camera.location.y, camera.location.z))
-            key(camera, end - 3, (current_x + (2.8 if index % 2 == 0 else -2.8),
-                                  camera.location.y, camera.location.z))
+            key(focus, transition_start, (0, 0, 2.55))
+            key(focus, end - 3, (direction * 2.0, 0, 2.55))
+            key(camera, end - 3, (current_x + direction * 2.8, camera.location.y, camera.location.z))
             key(camera, end, (current_x, camera.location.y, camera.location.z))
+            key(focus, end, (0, 0, 2.55))
+        elif transition_type == "bullet_time":
+            # Stylized, safe slow-motion orbit around a falling glowing seed/prop.
+            orb_mat = mat(f"BulletTime_Orb_{index}", (.12, .72, 1.0), .22)
+            orb = uv_sphere(f"BulletTime_Orb_{index}", (0, 0, 2.0), (.22, .22, .22), orb_mat)
+            key(orb, transition_start, (0, 0, 2.8))
+            key(orb, end, (0, 0, 1.0))
+            key(focus, transition_start, (0, 0, 2.8))
+            key(focus, end, (0, 0, 1.0))
+            orbit_radius = 5.0
+            for step in range(13):
+                frame = transition_start + int((end - transition_start) * step / 12)
+                angle = math.radians(360 * step / 12)
+                key(camera, frame, (orbit_radius * math.sin(angle), -orbit_radius * math.cos(angle), 2.0))
+            camera.data.lens = 35
+            camera.data.keyframe_insert(data_path="lens", frame=transition_start)
+            camera.data.lens = 50
+            camera.data.keyframe_insert(data_path="lens", frame=end)
         elif transition_type == "dolly_zoom":
             base_y = camera.location.y
             camera.data.lens = 42
