@@ -283,12 +283,8 @@ def main():
     rim.data.size = 5
     rim.rotation_euler = (math.radians(20),0,math.radians(180))
 
-    # Gentle easing for all animated properties.
-    for obj in bpy.data.objects:
-        if obj.animation_data and obj.animation_data.action:
-            for fc in obj.animation_data.action.fcurves:
-                for kp in fc.keyframe_points:
-                    kp.interpolation = "BEZIER"
+    # Blender's default keyframe interpolation is Bezier; avoid legacy
+    # Action.fcurves access because Blender 5.x uses layered actions.
 
     scene.camera.data.dof.use_dof = True
     scene.camera.data.dof.focus_object = target
