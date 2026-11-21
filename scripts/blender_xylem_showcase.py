@@ -165,6 +165,9 @@ def main():
     add_surface_texture(bark, scale=8.0, detail=5.0, bump_strength=0.24, distance=0.10)
     add_surface_texture(wood, scale=12.0, detail=3.0, bump_strength=0.12, distance=0.045)
     add_surface_texture(root_mat, scale=10.0, detail=3.0, bump_strength=0.14, distance=0.045)
+    add_surface_texture(green, scale=5.5, detail=2.5, bump_strength=0.08, distance=0.025)
+    add_surface_texture(green_light, scale=6.5, detail=2.0, bump_strength=0.06, distance=0.02)
+    add_surface_texture(xylem_mat, scale=9.0, detail=3.0, bump_strength=0.10, distance=0.025)
 
     # Dark teal studio world and a broad soil cross-section platform.
     world = bpy.data.worlds.new("Deep_Teal_Studio") if not bpy.data.worlds else bpy.data.worlds[0]
@@ -220,6 +223,55 @@ def main():
     # A compact canopy anchors the tree visually without distracting from the reveal.
     for i, (x,z,s) in enumerate([(-1.0,5.3,0.85),(0,5.8,1.05),(1.0,5.25,0.82),(-.45,6.25,.72),(.55,6.35,.70)]):
         uv("Canopy_Cluster", (x,0.15,z), (s,0.48,s*0.82), green if i%2 else green_light)
+
+    # V10: add layered, pointed leaf meshes over the canopy clusters.
+    # These are stylized broad leaves with a raised centre vein, not repeated spheres.
+    leaf_vein = material("Leaf_Veins", (0.24, 0.48, 0.19), 0.52)
+    def make_leaf(name, center, length, width, direction, mat):
+        direction = Vector(direction).normalized()
+        side = direction.cross(Vector((0, 1, 0)))
+        if side.length < 0.001:
+            side = direction.cross(Vector((1, 0, 0)))
+        side.normalize()
+        normal = direction.cross(side).normalized()
+        verts = []
+        # Five stations create a tapered, gently cupped leaf surface.
+        for t, w in [(0.0, 0.10), (0.25, 0.72), (0.52, 1.0), (0.78, 0.58), (1.0, 0.015)]:
+            p = Vector(center) + direction * (length * (t - 0.5))
+            camber = math.sin(t * math.pi) * length * 0.045
+            verts.extend([
+                tuple(p - side * (width * w) + normal * camber),
+                tuple(p + normal * (camber + length * 0.025)),
+                tuple(p + side * (width * w) + normal * camber)
+            ])
+        faces = []
+        for k in range(4):
+            a = k * 3
+            faces.extend([(a, a+1, a+4, a+3), (a+1, a+2, a+5, a+4)])
+        mesh = bpy.data.meshes.new(name + "_Mesh")
+        mesh.from_pydata(verts, [], faces)
+        mesh.materials.append(mat)
+        obj = bpy.data.objects.new(name, mesh)
+        bpy.context.collection.objects.link(obj)
+        solid = obj.modifiers.new("Leaf_Thickness", "SOLIDIFY")
+        solid.thickness = 0.012
+        smooth(obj)
+        vein = curve_tube(name + "_Centre_Vein",
+            [tuple(Vector(center) + direction * (length * t) + normal * (length * 0.035 * math.sin((t+0.5)*math.pi))) for t in (-0.48, -0.20, 0.08, 0.34, 0.49)],
+            0.006, leaf_vein, 8)
+        return obj
+
+    canopy_centres = [(-1.0,5.3,0.85),(0,5.8,1.05),(1.0,5.25,0.82),(-.45,6.25,.72),(.55,6.35,.70)]
+    for ci, (cx, cz, spread) in enumerate(canopy_centres):
+        for li in range(11):
+            angle = (li / 11.0) * math.tau + ci * 0.47
+            direction = (math.cos(angle), 0.12 * math.sin(li * 1.7), math.sin(angle) * 0.72 + 0.18)
+            center = (cx + math.cos(angle) * spread * 0.56,
+                      -0.30 + 0.10 * math.sin(li * 2.1),
+                      cz + math.sin(angle) * spread * 0.46)
+            make_leaf("Canopy_Leaf", center, 0.42 + (li % 3) * 0.08,
+                      0.095 + (li % 2) * 0.018, direction,
+                      green_light if (li + ci) % 4 == 0 else green)
 
     # Integrated trunk cutaway: a slim bark-framed window sits against the trunk,
     # so the wood and vessels read as part of the tree rather than a floating medallion.
@@ -283,6 +335,8 @@ def main():
     wall_mesh = bpy.data.meshes.new("Vessel_Inner_Wall_Mesh")
     wall_mesh.from_pydata(wall_verts, [], wall_faces)
     wall_mesh.materials.append(tunnel_ring_mat)
+    add_surface_texture(tunnel_ring_mat, scale=12.0, detail=3.0, bump_strength=0.08, distance=0.02)
+    add_surface_texture(tunnel_fibre_mat, scale=8.0, detail=2.0, bump_strength=0.06, distance=0.018)
     wall_obj = bpy.data.objects.new("Continuous_Vessel_Inner_Wall", wall_mesh)
     bpy.context.collection.objects.link(wall_obj)
     for poly in wall_mesh.polygons:
