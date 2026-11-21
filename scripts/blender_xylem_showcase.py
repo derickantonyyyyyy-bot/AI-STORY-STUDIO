@@ -224,9 +224,8 @@ def main():
     for i, (x,z,s) in enumerate([(-1.0,5.3,0.85),(0,5.8,1.05),(1.0,5.25,0.82),(-.45,6.25,.72),(.55,6.35,.70)]):
         uv("Canopy_Cluster", (x,0.15,z), (s,0.48,s*0.82), green if i%2 else green_light)
 
-    # V10: add layered, pointed leaf meshes over the canopy clusters.
-    # These are stylized broad leaves with a raised centre vein, not repeated spheres.
-    leaf_vein = material("Leaf_Veins", (0.24, 0.48, 0.19), 0.52)
+    # V11: softer oval leaves with rounded tips and less radial, spiky placement.
+    leaf_vein = material("Leaf_Veins", (0.24, 0.48, 0.19), 0.58)
     def make_leaf(name, center, length, width, direction, mat):
         direction = Vector(direction).normalized()
         side = direction.cross(Vector((0, 1, 0)))
@@ -235,42 +234,47 @@ def main():
         side.normalize()
         normal = direction.cross(side).normalized()
         verts = []
-        # Five stations create a tapered, gently cupped leaf surface.
-        for t, w in [(0.0, 0.10), (0.25, 0.72), (0.52, 1.0), (0.78, 0.58), (1.0, 0.015)]:
+        # Seven stations create a fuller oval blade with a softly rounded tip.
+        profile = [(0.0,0.10),(0.16,0.52),(0.34,0.86),(0.52,1.0),
+                   (0.70,0.88),(0.86,0.55),(1.0,0.10)]
+        for t, w in profile:
             p = Vector(center) + direction * (length * (t - 0.5))
-            camber = math.sin(t * math.pi) * length * 0.045
+            camber = math.sin(t * math.pi) * length * 0.035
             verts.extend([
                 tuple(p - side * (width * w) + normal * camber),
-                tuple(p + normal * (camber + length * 0.025)),
+                tuple(p + normal * (camber + length * 0.012)),
                 tuple(p + side * (width * w) + normal * camber)
             ])
         faces = []
-        for k in range(4):
+        for k in range(len(profile)-1):
             a = k * 3
-            faces.extend([(a, a+1, a+4, a+3), (a+1, a+2, a+5, a+4)])
+            faces.extend([(a,a+1,a+4,a+3),(a+1,a+2,a+5,a+4)])
         mesh = bpy.data.meshes.new(name + "_Mesh")
         mesh.from_pydata(verts, [], faces)
         mesh.materials.append(mat)
         obj = bpy.data.objects.new(name, mesh)
         bpy.context.collection.objects.link(obj)
         solid = obj.modifiers.new("Leaf_Thickness", "SOLIDIFY")
-        solid.thickness = 0.012
+        solid.thickness = 0.009
         smooth(obj)
-        vein = curve_tube(name + "_Centre_Vein",
-            [tuple(Vector(center) + direction * (length * t) + normal * (length * 0.035 * math.sin((t+0.5)*math.pi))) for t in (-0.48, -0.20, 0.08, 0.34, 0.49)],
-            0.006, leaf_vein, 8)
+        vein_points = [
+            tuple(Vector(center) + direction * (length * (t-0.5))
+                  + normal * (length * 0.035 * math.sin(t*math.pi)))
+            for t in (0.04,0.24,0.48,0.72,0.94)
+        ]
+        curve_tube(name + "_Centre_Vein", vein_points, 0.0035, leaf_vein, 8)
         return obj
 
     canopy_centres = [(-1.0,5.3,0.85),(0,5.8,1.05),(1.0,5.25,0.82),(-.45,6.25,.72),(.55,6.35,.70)]
     for ci, (cx, cz, spread) in enumerate(canopy_centres):
-        for li in range(11):
-            angle = (li / 11.0) * math.tau + ci * 0.47
-            direction = (math.cos(angle), 0.12 * math.sin(li * 1.7), math.sin(angle) * 0.72 + 0.18)
-            center = (cx + math.cos(angle) * spread * 0.56,
-                      -0.30 + 0.10 * math.sin(li * 2.1),
-                      cz + math.sin(angle) * spread * 0.46)
-            make_leaf("Canopy_Leaf", center, 0.42 + (li % 3) * 0.08,
-                      0.095 + (li % 2) * 0.018, direction,
+        for li in range(7):
+            angle = (li / 7.0) * math.tau + ci * 0.47
+            direction = (math.cos(angle), 0.20 * math.sin(li * 1.3), math.sin(angle) * 0.48 + 0.24)
+            center = (cx + math.cos(angle) * spread * 0.43,
+                      -0.30 + 0.12 * math.sin(li * 1.8),
+                      cz + math.sin(angle) * spread * 0.34)
+            make_leaf("Canopy_Leaf", center, 0.46 + (li % 2) * 0.045,
+                      0.135 + (li % 2) * 0.012, direction,
                       green_light if (li + ci) % 4 == 0 else green)
 
     # Integrated trunk cutaway: a slim bark-framed window sits against the trunk,
@@ -366,11 +370,18 @@ def main():
     curve_tube("Central_Water_Flow", [(0, tunnel_y_start+0.1, 3.28),
                (0, 1.2, 3.28), (0, 4.2, 3.28), (0, tunnel_y_end-0.2, 3.28)],
                0.035, flow_mat)
-    for i in range(7):
-        drop = uv("Macro_Water_Droplet", (0, 0, 3.28), (0.055, 0.09, 0.055), water, 24, 16)
-        for frame, yy in [(1, -0.45 + i*0.28), (120, 1.0 + i*0.28),
-                          (240, 3.0 + i*0.28), (END, 6.5 + i*0.18)]:
-            drop.location = (0, yy, 3.28 + 0.035*math.sin(i))
+    # V11: staggered droplets follow a gentle helical path. Their sideways
+    # orbit is visible to the camera looking down the vessel, so flow reads as motion.
+    for i in range(6):
+        drop = uv("Macro_Water_Droplet", (0, 0, 3.28), (0.042, 0.075, 0.042), water, 24, 16)
+        phase = i * (math.tau / 6.0)
+        base_y = 0.15 + i * 0.68
+        for frame, yy, turns in [(1, base_y, 0.0), (120, base_y + 0.85, 0.8),
+                                 (240, base_y + 1.75, 1.65), (END, base_y + 2.65, 2.5)]:
+            angle = phase + turns * math.tau
+            radius = 0.115
+            drop.location = (radius * math.cos(angle), yy,
+                             3.28 + radius * math.sin(angle))
             drop.keyframe_insert(data_path="location", frame=frame)
 
     # No floating 3D labels: clean, synchronized captions will be composited later.
