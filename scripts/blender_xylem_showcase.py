@@ -342,18 +342,18 @@ def main():
     key_location(camera, 1, (0,-18.2,4.45))
     key_location(camera, 105, (0,-15.8,4.05))
     key_location(camera, 210, (0,-8.2,3.55))
-    key_location(camera, 275, (0,-0.35,3.28))
-    key_location(camera, END, (0,1.25,3.28))
+    key_location(camera, 275, (0,-0.92,3.28))
+    key_location(camera, END, (0,-0.92,3.28))
     for frame, loc in [
         (1,(0,0.0,2.45)),
         (105,(0,-0.12,2.72)),
         (210,(0,-0.55,3.05)),
-        (275,(0,3.0,3.28)),
-        (END,(0,5.7,3.28))
+        (275,(0,3.0,3.72)),
+        (END,(0,3.0,3.72))
     ]:
         target.location = loc
         target.keyframe_insert(data_path="location", frame=frame)
-    for frame,lens in [(1,38),(105,40),(210,48),(275,48),(END,55)]:
+    for frame,lens in [(1,38),(105,40),(210,48),(275,52),(END,52)]:
         camera.data.lens = lens
         camera.data.keyframe_insert(data_path="lens", frame=frame)
 
