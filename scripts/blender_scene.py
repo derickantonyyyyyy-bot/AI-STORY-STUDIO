@@ -292,15 +292,13 @@ def main():
             key(focus, reveal_frame, (0, 0, 1.25))
             key(focus, end, (0, 0, 1.25))
             if transition_type == "orthographic_slice":
-                camera.data.type = "ORTHO"
-                camera.data.ortho_scale = 3.4
-                camera.data.keyframe_insert(data_path="type", frame=reveal_frame)
-                camera.data.keyframe_insert(data_path="ortho_scale", frame=reveal_frame)
-                camera.data.ortho_scale = 2.8
-                camera.data.keyframe_insert(data_path="ortho_scale", frame=settle_frame)
+                # Long-lens perspective gives a clean textbook cutaway without
+                # switching the camera's non-animatable projection enum mid-shot.
+                camera.data.lens = 70
+                camera.data.keyframe_insert(data_path="lens", frame=reveal_frame)
+                camera.data.lens = 85
+                camera.data.keyframe_insert(data_path="lens", frame=settle_frame)
             else:
-                camera.data.type = "PERSP"
-                camera.data.keyframe_insert(data_path="type", frame=reveal_frame)
                 camera.data.lens = 18
                 camera.data.keyframe_insert(data_path="lens", frame=reveal_frame)
                 camera.data.lens = 32
@@ -326,17 +324,17 @@ def main():
             # Stylized, safe slow-motion orbit around a falling glowing seed/prop.
             orb_mat = mat(f"BulletTime_Orb_{index}", (.12, .72, 1.0), .22)
             orb = uv_sphere(f"BulletTime_Orb_{index}", (0, 0, 2.0), (.22, .22, .22), orb_mat)
-            key(orb, transition_start, (0, 0, 2.8))
+            key(orb, start, (0, 0, 2.8))
             key(orb, end, (0, 0, 1.0))
-            key(focus, transition_start, (0, 0, 2.8))
+            key(focus, start, (0, 0, 2.8))
             key(focus, end, (0, 0, 1.0))
             orbit_radius = 5.0
             for step in range(13):
-                frame = transition_start + int((end - transition_start) * step / 12)
+                frame = start + int((end - start) * step / 12)
                 angle = math.radians(360 * step / 12)
                 key(camera, frame, (orbit_radius * math.sin(angle), -orbit_radius * math.cos(angle), 2.0))
             camera.data.lens = 35
-            camera.data.keyframe_insert(data_path="lens", frame=transition_start)
+            camera.data.keyframe_insert(data_path="lens", frame=start)
             camera.data.lens = 50
             camera.data.keyframe_insert(data_path="lens", frame=end)
         elif transition_type == "dolly_zoom":
