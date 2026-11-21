@@ -43,6 +43,22 @@ def apply_mat(obj, mat):
     obj.data.materials.append(mat)
     return obj
 
+def add_surface_texture(mat, scale=5.0, detail=3.0, bump_strength=0.16, distance=0.08):
+    """Subtle procedural grain; keeps the stylized look while avoiding flat surfaces."""
+    nodes = mat.node_tree.nodes
+    links = mat.node_tree.links
+    bsdf = nodes.get("Principled BSDF")
+    noise = nodes.new("ShaderNodeTexNoise")
+    noise.inputs["Scale"].default_value = scale
+    noise.inputs["Detail"].default_value = detail
+    noise.inputs["Roughness"].default_value = 0.72
+    bump = nodes.new("ShaderNodeBump")
+    bump.inputs["Strength"].default_value = bump_strength
+    bump.inputs["Distance"].default_value = distance
+    links.new(noise.outputs["Fac"], bump.inputs["Height"])
+    links.new(bump.outputs["Normal"], bsdf.inputs["Normal"])
+    return mat
+
 def smooth(obj):
     if obj.type == "MESH":
         for p in obj.data.polygons:
@@ -144,6 +160,12 @@ def main():
     gold = emissive("Warm_Label", (1.0, 0.68, 0.28), 0.8)
     white = material("Soft_White", (0.88, 0.94, 0.96), 0.45)
 
+    # Fine procedural surface detail for bark, wood and soil.
+    add_surface_texture(soil, scale=7.5, detail=4.0, bump_strength=0.22, distance=0.12)
+    add_surface_texture(bark, scale=8.0, detail=5.0, bump_strength=0.24, distance=0.10)
+    add_surface_texture(wood, scale=12.0, detail=3.0, bump_strength=0.12, distance=0.045)
+    add_surface_texture(root_mat, scale=10.0, detail=3.0, bump_strength=0.14, distance=0.045)
+
     # Dark teal studio world and a broad soil cross-section platform.
     world = bpy.data.worlds.new("Deep_Teal_Studio") if not bpy.data.worlds else bpy.data.worlds[0]
     scene.world = world
@@ -216,10 +238,12 @@ def main():
         uv("Xylem_Vessel", (x,-0.89,z), (0.073,0.025,0.073), xylem_mat, 24, 16)
         # tiny luminous water bead inside each visible vessel
         bead = uv("Water_Bead", (x,-0.925,z), (0.035,0.018,0.035), water, 20, 12)
-        bead.location.z = z - 0.18
-        bead.keyframe_insert(data_path="location", frame=110)
-        bead.location.z = z + 0.18
-        bead.keyframe_insert(data_path="location", frame=230)
+        bead.location.z = z - 0.20
+        bead.keyframe_insert(data_path="location", frame=70 + (i % 3) * 12)
+        bead.location.z = z + 0.20
+        bead.keyframe_insert(data_path="location", frame=190 + (i % 3) * 12)
+        bead.location.z = z - 0.20
+        bead.keyframe_insert(data_path="location", frame=310 + (i % 3) * 12)
 
     # A few visible vertical water channels beside the cross-section connect the idea.
     for i,x in enumerate([-0.34,0.0,0.34]):
@@ -227,15 +251,16 @@ def main():
         for j in range(4):
             z0 = 0.7 + j*0.56
             drop = uv("Ascending_Water_Drop", (x,-0.64,z0), (0.055,0.045,0.075), water, 20, 12)
-            drop.location.z = z0
-            drop.keyframe_insert(data_path="location", frame=1 + j*10)
-            drop.location.z = z0 + 1.7
+            drop.location.z = z0 - 0.25
+            drop.keyframe_insert(data_path="location", frame=1 + j*18)
+            drop.location.z = z0 + 0.65
+            drop.keyframe_insert(data_path="location", frame=105 + j*18)
+            drop.location.z = z0 + 1.55
+            drop.keyframe_insert(data_path="location", frame=210 + j*18)
+            drop.location.z = z0 + 2.35
             drop.keyframe_insert(data_path="location", frame=END)
 
-    # Labels sit in the scene as restrained, readable annotations.
-    add_text("ROOT NETWORK", (-2.15,-0.62,0.78), 0.20, white, "Label_Roots")
-    add_text("XYLEM", (1.28,-0.98,3.28), 0.23, gold, "Label_Xylem")
-    add_text("WATER MOVES UPWARD", (0,-0.65,4.55), 0.19, white, "Label_Upward")
+    # No floating 3D labels: clean, synchronized captions will be composited later.
 
     # Camera: establish the root system, then travel into the trunk cross-section.
     bpy.ops.object.camera_add(location=(0,-15.8,4.15))
@@ -252,14 +277,14 @@ def main():
     track.up_axis = "UP_Y"
     scene.camera = camera
 
-    key_location(camera, 1, (0,-15.8,4.15))
-    key_location(camera, 105, (0,-11.8,3.55))
-    key_location(camera, 190, (0,-8.6,3.35))
-    key_location(camera, END, (0,-7.8,3.30))
-    for frame, loc in [(1,(0,0,2.45)),(105,(0,-0.1,2.85)),(190,(0,-0.55,3.15)),(END,(0,-0.55,3.15))]:
+    key_location(camera, 1, (0,-16.8,4.35))
+    key_location(camera, 125, (0,-14.0,3.75))
+    key_location(camera, 245, (0,-10.8,3.45))
+    key_location(camera, END, (0,-9.7,3.35))
+    for frame, loc in [(1,(0,0,2.45)),(125,(0,0,2.75)),(245,(0,-0.35,3.05)),(END,(0,-0.45,3.12))]:
         target.location = loc
         target.keyframe_insert(data_path="location", frame=frame)
-    for frame,lens in [(1,42),(105,48),(190,62),(END,62)]:
+    for frame,lens in [(1,40),(125,44),(245,52),(END,56)]:
         camera.data.lens = lens
         camera.data.keyframe_insert(data_path="lens", frame=frame)
 
@@ -288,7 +313,7 @@ def main():
 
     scene.camera.data.dof.use_dof = True
     scene.camera.data.dof.focus_object = target
-    scene.camera.data.dof.aperture_fstop = 5.6
+    scene.camera.data.dof.aperture_fstop = 7.1
     scene.render.filepath = output
     os.makedirs(os.path.dirname(output), exist_ok=True)
     bpy.ops.render.render(animation=True)
