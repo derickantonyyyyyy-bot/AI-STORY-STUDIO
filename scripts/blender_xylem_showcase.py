@@ -221,23 +221,27 @@ def main():
     for i, (x,z,s) in enumerate([(-1.0,5.3,0.85),(0,5.8,1.05),(1.0,5.25,0.82),(-.45,6.25,.72),(.55,6.35,.70)]):
         uv("Canopy_Cluster", (x,0.15,z), (s,0.48,s*0.82), green if i%2 else green_light)
 
-    # Cross-section plate is a clean educational cutaway, facing the camera.
-    disc = cylinder("Tree_Cross_Section", (0,-0.72,3.15), 1.12, 0.16, wood, 96, (math.radians(90),0,0), 0.035)
-    # Growth rings on the front plane.
-    for radius in [0.35,0.57,0.78,0.96]:
-        bpy.ops.mesh.primitive_torus_add(major_radius=radius, minor_radius=0.018, major_segments=96, minor_segments=10, location=(0,-0.82,3.15), rotation=(math.radians(90),0,0))
+    # Integrated trunk cutaway: a slim bark-framed window sits against the trunk,
+    # so the wood and vessels read as part of the tree rather than a floating medallion.
+    cutaway_frame = uv("Integrated_Bark_Cutaway_Rim", (0,-0.485,3.05), (0.49,0.075,1.18), bark, 48, 32)
+    cutaway_wood = uv("Exposed_Trunk_Wood", (0,-0.548,3.05), (0.405,0.045,1.08), wood, 48, 32)
+    # Fine vertical grain lines inside the exposed wood.
+    for i in range(9):
+        x = -0.30 + i * 0.075
+        curve_tube("Vertical_Wood_Grain", [(x,-0.595,2.18),(x*0.98,-0.598,2.75),(x*0.94,-0.598,3.35),(x*0.90,-0.59,3.92)], 0.008, ring_dark)
+    # A compact cross-section inset is embedded in the exposed trunk window.
+    disc = cylinder("Integrated_Xylem_Cross_Section", (0,-0.625,3.28), 0.39, 0.055, wood, 96, (math.radians(90),0,0), 0.018)
+    for radius in [0.12,0.20,0.28,0.34]:
+        bpy.ops.mesh.primitive_torus_add(major_radius=radius, minor_radius=0.009, major_segments=72, minor_segments=8, location=(0,-0.66,3.28), rotation=(math.radians(90),0,0))
         apply_mat(bpy.context.object, ring_dark)
-    # Central pith.
-    uv("Tree_Pith", (0,-0.835,3.15), (0.13,0.035,0.13), ring_dark, 24, 16)
+    uv("Tree_Pith", (0,-0.675,3.28), (0.045,0.018,0.045), ring_dark, 24, 16)
 
-    # Clearly visible xylem vessel openings distributed within the wood section.
-    vessel_positions = [(-.50,3.36),(-.22,3.58),(.12,3.54),(.48,3.34),(-.48,2.98),(-.14,2.82),(.22,2.91),(.52,3.02),(0,3.18)]
+    # Xylem vessel openings sized to fit the smaller, integrated wood inset.
+    vessel_positions = [(-.17,3.37),(-.075,3.46),(.06,3.45),(.18,3.36),(-.17,3.18),(-.07,3.10),(.08,3.12),(.18,3.20),(0,3.28)]
     for i,(x,z) in enumerate(vessel_positions):
-        # dark rim and teal inner lumen
-        uv("Vessel_Rim", (x,-0.855,z), (0.105,0.028,0.105), ring_dark, 24, 16)
-        uv("Xylem_Vessel", (x,-0.89,z), (0.073,0.025,0.073), xylem_mat, 24, 16)
-        # tiny luminous water bead inside each visible vessel
-        bead = uv("Water_Bead", (x,-0.925,z), (0.035,0.018,0.035), water, 20, 12)
+        uv("Vessel_Rim", (x,-0.682,z), (0.042,0.012,0.042), ring_dark, 24, 16)
+        uv("Xylem_Vessel", (x,-0.698,z), (0.029,0.010,0.029), xylem_mat, 24, 16)
+        bead = uv("Water_Bead", (x,-0.715,z), (0.014,0.008,0.014), water, 20, 12)
         bead.location.z = z - 0.20
         bead.keyframe_insert(data_path="location", frame=70 + (i % 3) * 12)
         bead.location.z = z + 0.20
@@ -245,20 +249,15 @@ def main():
         bead.location.z = z - 0.20
         bead.keyframe_insert(data_path="location", frame=310 + (i % 3) * 12)
 
-    # A few visible vertical water channels beside the cross-section connect the idea.
-    for i,x in enumerate([-0.34,0.0,0.34]):
-        channel = curve_tube("Water_Transport_Channel", [(x,-0.56,0.55),(x*0.96,-0.56,1.45),(x*0.92,-0.56,2.35),(x*0.88,-0.56,3.0)], 0.035, xylem_mat)
-        for j in range(4):
-            z0 = 0.7 + j*0.56
-            drop = uv("Ascending_Water_Drop", (x,-0.64,z0), (0.055,0.045,0.075), water, 20, 12)
-            drop.location.z = z0 - 0.25
-            drop.keyframe_insert(data_path="location", frame=1 + j*18)
-            drop.location.z = z0 + 0.65
-            drop.keyframe_insert(data_path="location", frame=105 + j*18)
-            drop.location.z = z0 + 1.55
-            drop.keyframe_insert(data_path="location", frame=210 + j*18)
-            drop.location.z = z0 + 2.35
-            drop.keyframe_insert(data_path="location", frame=END)
+    # Water transport is visibly embedded in the trunk's exposed xylem window.
+    for i,x in enumerate([-0.23,-0.11,0.0,0.11,0.23]):
+        curve_tube("Embedded_Xylem_Channel", [(x,-0.606,2.02),(x*0.98,-0.610,2.48),(x*0.94,-0.610,3.00),(x*0.90,-0.605,4.02)], 0.012, xylem_mat)
+        for j in range(3):
+            z0 = 2.18 + j*0.48 + (i%2)*0.13
+            drop = uv("Ascending_Water_Drop", (x,-0.635,z0), (0.022,0.016,0.045), water, 20, 12)
+            for frame, dz in [(1,-0.28),(70,0.22),(140,0.78),(210,1.34),(END,1.90)]:
+                drop.location.z = z0 + dz
+                drop.keyframe_insert(data_path="location", frame=frame + i*3 + j*5)
 
     # No floating 3D labels: clean, synchronized captions will be composited later.
 
@@ -277,14 +276,14 @@ def main():
     track.up_axis = "UP_Y"
     scene.camera = camera
 
-    key_location(camera, 1, (0,-16.8,4.35))
-    key_location(camera, 125, (0,-14.0,3.75))
-    key_location(camera, 245, (0,-10.8,3.45))
-    key_location(camera, END, (0,-9.7,3.35))
-    for frame, loc in [(1,(0,0,2.45)),(125,(0,0,2.75)),(245,(0,-0.35,3.05)),(END,(0,-0.45,3.12))]:
+    key_location(camera, 1, (0,-18.2,4.45))
+    key_location(camera, 125, (0,-16.0,3.95))
+    key_location(camera, 245, (0,-13.8,3.55))
+    key_location(camera, END, (0,-12.8,3.48))
+    for frame, loc in [(1,(0,0,2.45)),(125,(0,0,2.70)),(245,(0,-0.20,2.95)),(END,(0,-0.22,3.02))]:
         target.location = loc
         target.keyframe_insert(data_path="location", frame=frame)
-    for frame,lens in [(1,40),(125,44),(245,52),(END,56)]:
+    for frame,lens in [(1,38),(125,40),(245,44),(END,46)]:
         camera.data.lens = lens
         camera.data.keyframe_insert(data_path="lens", frame=frame)
 
@@ -313,7 +312,7 @@ def main():
 
     scene.camera.data.dof.use_dof = True
     scene.camera.data.dof.focus_object = target
-    scene.camera.data.dof.aperture_fstop = 7.1
+    scene.camera.data.dof.aperture_fstop = 8.0
     scene.render.filepath = output
     os.makedirs(os.path.dirname(output), exist_ok=True)
     bpy.ops.render.render(animation=True)
