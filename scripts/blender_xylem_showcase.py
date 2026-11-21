@@ -334,7 +334,7 @@ def main():
     track = camera.constraints.new(type="TRACK_TO")
     track.target = target
     track.track_axis = "TRACK_NEGATIVE_Z"
-    track.up_axis = "UP_Z"
+    track.up_axis = "UP_Y"
     scene.camera = camera
 
     # A gradual, continuous dolly-in; the final target sits on the actual
