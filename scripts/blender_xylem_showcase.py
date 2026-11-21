@@ -153,8 +153,8 @@ def main():
     wood = material("Fresh_Wood", (0.76, 0.53, 0.29), 0.58)
     ring_dark = material("Growth_Rings", (0.43, 0.26, 0.12), 0.72)
     root_mat = material("Root_Fibres", (0.49, 0.28, 0.13), 0.72)
-    green = material("Leaf_Green", (0.055, 0.26, 0.105), 0.48, subsurface=0.04)
-    green_light = material("Leaf_Highlight", (0.16, 0.42, 0.17), 0.42, subsurface=0.05)
+    green = material("Leaf_Green", (0.045, 0.22, 0.075), 0.38, subsurface=0.08)
+    green_light = material("Leaf_Highlight", (0.12, 0.34, 0.12), 0.34, subsurface=0.09)
     xylem_mat = material("Xylem_Teal", (0.035, 0.32, 0.39), 0.34, metallic=0.08)
     water = emissive("Glowing_Water", (0.08, 0.68, 1.0), 2.2)
     gold = emissive("Warm_Label", (1.0, 0.68, 0.28), 0.8)
@@ -220,11 +220,24 @@ def main():
             side = -1 if (i+j)%2 else 1
             curve_tube("Fine_Rootlet", [p, (p[0]+side*0.25, p[1]-0.025, p[2]-0.22), (p[0]+side*0.52, p[1], p[2]-0.32)], 0.018, root_mat)
 
-    # A compact canopy anchors the tree visually without distracting from the reveal.
-    for i, (x,z,s) in enumerate([(-1.0,5.3,0.85),(0,5.8,1.05),(1.0,5.25,0.82),(-.45,6.25,.72),(.55,6.35,.70)]):
-        uv("Canopy_Cluster", (x,0.15,z), (s,0.48,s*0.82), green if i%2 else green_light)
+    # V12: branch structure connects the canopy clusters back to the trunk.
+    canopy_centres = [(-1.0,5.3,0.85),(0,5.8,1.05),(1.0,5.25,0.82),(-.45,6.25,.72),(.55,6.35,.70)]
+    for i, (x,z,s) in enumerate(canopy_centres):
+        uv("Canopy_Cluster", (x,0.15,z), (s*0.78,0.42,s*0.66), green if i%2 else green_light)
+    branch_mat = material("Canopy_Branches", (0.19,0.075,0.032), 0.82)
+    for i, (x,z,s) in enumerate(canopy_centres):
+        start_x = -0.08 if x < 0 else 0.08
+        curve_tube("Canopy_Main_Branch",
+                   [(start_x,0.02,4.55),(start_x*1.5,-0.01,4.95),
+                    (x*0.52,-0.02,5.20),(x,-0.02,z-0.08)],
+                   0.055 if i < 3 else 0.038, branch_mat)
+        for side in (-1,1):
+            curve_tube("Canopy_Side_Twig",
+                       [(x*0.58,-0.04,5.12),(x*0.78+side*0.12,-0.06,5.32),
+                        (x+side*0.20,-0.08,z+0.06)],
+                       0.018, branch_mat)
 
-    # V11: softer oval leaves with rounded tips and less radial, spiky placement.
+    # V12: fuller oval leaves, arranged around visible branching twigs.
     leaf_vein = material("Leaf_Veins", (0.24, 0.48, 0.19), 0.58)
     def make_leaf(name, center, length, width, direction, mat):
         direction = Vector(direction).normalized()
@@ -265,16 +278,15 @@ def main():
         curve_tube(name + "_Centre_Vein", vein_points, 0.0035, leaf_vein, 8)
         return obj
 
-    canopy_centres = [(-1.0,5.3,0.85),(0,5.8,1.05),(1.0,5.25,0.82),(-.45,6.25,.72),(.55,6.35,.70)]
     for ci, (cx, cz, spread) in enumerate(canopy_centres):
-        for li in range(7):
-            angle = (li / 7.0) * math.tau + ci * 0.47
+        for li in range(9):
+            angle = (li / 9.0) * math.tau + ci * 0.47
             direction = (math.cos(angle), 0.20 * math.sin(li * 1.3), math.sin(angle) * 0.48 + 0.24)
             center = (cx + math.cos(angle) * spread * 0.43,
                       -0.30 + 0.12 * math.sin(li * 1.8),
                       cz + math.sin(angle) * spread * 0.34)
-            make_leaf("Canopy_Leaf", center, 0.46 + (li % 2) * 0.045,
-                      0.135 + (li % 2) * 0.012, direction,
+            make_leaf("Canopy_Leaf", center, 0.48 + (li % 2) * 0.05,
+                      0.145 + (li % 2) * 0.015, direction,
                       green_light if (li + ci) % 4 == 0 else green)
 
     # Integrated trunk cutaway: a slim bark-framed window sits against the trunk,
@@ -370,19 +382,35 @@ def main():
     curve_tube("Central_Water_Flow", [(0, tunnel_y_start+0.1, 3.28),
                (0, 1.2, 3.28), (0, 4.2, 3.28), (0, tunnel_y_end-0.2, 3.28)],
                0.035, flow_mat)
-    # V11: staggered droplets follow a gentle helical path. Their sideways
-    # orbit is visible to the camera looking down the vessel, so flow reads as motion.
+    # V12: a layered stream of larger beads plus fine moving micro-droplets.
+    # Their orbital motion is screen-visible in the head-on macro view.
     for i in range(6):
-        drop = uv("Macro_Water_Droplet", (0, 0, 3.28), (0.042, 0.075, 0.042), water, 24, 16)
+        drop = uv("Macro_Water_Droplet", (0, 0, 3.28), (0.046, 0.082, 0.046), water, 24, 16)
         phase = i * (math.tau / 6.0)
-        base_y = 0.15 + i * 0.68
-        for frame, yy, turns in [(1, base_y, 0.0), (120, base_y + 0.85, 0.8),
-                                 (240, base_y + 1.75, 1.65), (END, base_y + 2.65, 2.5)]:
+        base_y = 0.12 + i * 0.68
+        for frame, yy, turns in [(1, base_y, 0.0), (120, base_y + 0.95, 0.9),
+                                 (240, base_y + 1.95, 1.9), (END, base_y + 3.0, 2.9)]:
             angle = phase + turns * math.tau
-            radius = 0.115
+            radius = 0.13
             drop.location = (radius * math.cos(angle), yy,
                              3.28 + radius * math.sin(angle))
             drop.keyframe_insert(data_path="location", frame=frame)
+            pulse = 1.0 + 0.12 * math.sin(angle)
+            drop.scale = (0.046*pulse, 0.082*pulse, 0.046*pulse)
+            drop.keyframe_insert(data_path="scale", frame=frame)
+
+    # Fine droplets add a continuous-looking stream between the larger beads.
+    for i in range(10):
+        bead = uv("Micro_Water_Droplet", (0, 0, 3.28), (0.018, 0.032, 0.018), water, 16, 10)
+        phase = i * 2.399963
+        base_y = 0.35 + i * 0.53
+        for frame, yy, turns in [(1,base_y,0.0),(120,base_y+1.0,0.75),
+                                 (240,base_y+2.0,1.55),(END,base_y+3.0,2.35)]:
+            angle = phase + turns * math.tau
+            radius = 0.19
+            bead.location = (radius*math.cos(angle), yy,
+                             3.28+radius*math.sin(angle))
+            bead.keyframe_insert(data_path="location", frame=frame)
 
     # No floating 3D labels: clean, synchronized captions will be composited later.
 
