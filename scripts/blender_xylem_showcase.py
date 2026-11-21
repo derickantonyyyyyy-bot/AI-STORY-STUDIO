@@ -254,14 +254,15 @@ def main():
         curve_tube("Embedded_Xylem_Channel", [(x,-0.606,2.02),(x*0.98,-0.610,2.48),(x*0.94,-0.610,3.00),(x*0.90,-0.605,4.02)], 0.012, xylem_mat)
         for j in range(3):
             z0 = 2.18 + j*0.48 + (i%2)*0.13
-            drop = uv("Ascending_Water_Drop", (x,-0.635,z0), (0.022,0.016,0.045), water, 20, 12)
+            drop = uv("Ascending_Water_Drop", (x,-0.635,z0), (0.027,0.018,0.060), water, 20, 12)
             for frame, dz in [(1,-0.28),(70,0.22),(140,0.78),(210,1.34),(END,1.90)]:
                 drop.location.z = z0 + dz
                 drop.keyframe_insert(data_path="location", frame=frame + i*3 + j*5)
 
     # No floating 3D labels: clean, synchronized captions will be composited later.
 
-    # Camera: establish the root system, then travel into the trunk cross-section.
+    # V4 camera journey: establish the whole tree, approach the trunk,
+    # then finish on a readable close-up of the exposed xylem vessels.
     bpy.ops.object.camera_add(location=(0,-15.8,4.15))
     camera = bpy.context.object
     camera.name = "Showcase_Camera"
@@ -276,14 +277,21 @@ def main():
     track.up_axis = "UP_Y"
     scene.camera = camera
 
+    # A gradual, continuous dolly-in; the final target sits on the actual
+    # front-facing xylem window rather than the trunk's centre.
     key_location(camera, 1, (0,-18.2,4.45))
-    key_location(camera, 125, (0,-16.0,3.95))
-    key_location(camera, 245, (0,-13.8,3.55))
-    key_location(camera, END, (0,-12.8,3.48))
-    for frame, loc in [(1,(0,0,2.45)),(125,(0,0,2.70)),(245,(0,-0.20,2.95)),(END,(0,-0.22,3.02))]:
+    key_location(camera, 105, (0,-15.8,4.05))
+    key_location(camera, 210, (0,-11.5,3.75))
+    key_location(camera, END, (0,-8.4,3.58))
+    for frame, loc in [
+        (1,(0,0.0,2.45)),
+        (105,(0,-0.12,2.72)),
+        (210,(0,-0.42,3.05)),
+        (END,(0,-0.62,3.28))
+    ]:
         target.location = loc
         target.keyframe_insert(data_path="location", frame=frame)
-    for frame,lens in [(1,38),(125,40),(245,44),(END,46)]:
+    for frame,lens in [(1,38),(105,40),(210,48),(END,55)]:
         camera.data.lens = lens
         camera.data.keyframe_insert(data_path="lens", frame=frame)
 
@@ -312,7 +320,7 @@ def main():
 
     scene.camera.data.dof.use_dof = True
     scene.camera.data.dof.focus_object = target
-    scene.camera.data.dof.aperture_fstop = 8.0
+    scene.camera.data.dof.aperture_fstop = 11.0
     scene.render.filepath = output
     os.makedirs(os.path.dirname(output), exist_ok=True)
     bpy.ops.render.render(animation=True)
