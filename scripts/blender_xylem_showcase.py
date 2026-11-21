@@ -223,7 +223,8 @@ def main():
     # V12: branch structure connects the canopy clusters back to the trunk.
     canopy_centres = [(-1.0,5.3,0.85),(0,5.8,1.05),(1.0,5.25,0.82),(-.45,6.25,.72),(.55,6.35,.70)]
     for i, (x,z,s) in enumerate(canopy_centres):
-        uv("Canopy_Cluster", (x,0.15,z), (s*0.78,0.42,s*0.66), green if i%2 else green_light)
+        # Smaller foliage masses let the individual leaves and branch network define the silhouette.
+        uv("Canopy_Cluster", (x,0.15,z), (s*0.48,0.30,s*0.43), green if i%2 else green_light)
     branch_mat = material("Canopy_Branches", (0.19,0.075,0.032), 0.82)
     for i, (x,z,s) in enumerate(canopy_centres):
         start_x = -0.08 if x < 0 else 0.08
@@ -236,6 +237,19 @@ def main():
                        [(x*0.58,-0.04,5.12),(x*0.78+side*0.12,-0.06,5.32),
                         (x+side*0.20,-0.08,z+0.06)],
                        0.018, branch_mat)
+        # A small hierarchy of secondary twigs fans outward from each main branch.
+        # These stay visible between the smaller foliage masses.
+        for side in (-1,1):
+            for level in (0,1):
+                root_x = x * (0.72 + level * 0.12)
+                root_z = 5.18 + level * 0.20
+                tip_x = x + side * (0.34 + level * 0.12)
+                tip_z = z + (0.18 if level == 0 else -0.10)
+                curve_tube("Fine_Canopy_Twig",
+                           [(root_x,-0.10,root_z),
+                            (root_x + side*0.12,-0.12,root_z+0.12),
+                            (tip_x,-0.12,tip_z)],
+                           0.010 if level == 0 else 0.008, branch_mat)
 
     # V12: fuller oval leaves, arranged around visible branching twigs.
     leaf_vein = material("Leaf_Veins", (0.24, 0.48, 0.19), 0.58)
@@ -382,6 +396,38 @@ def main():
     curve_tube("Central_Water_Flow", [(0, tunnel_y_start+0.1, 3.28),
                (0, 1.2, 3.28), (0, 4.2, 3.28), (0, tunnel_y_end-0.2, 3.28)],
                0.035, flow_mat)
+
+    # V13: three slim helical flow filaments make the stream read as directional
+    # transport through the vessel, rather than isolated decorative beads.
+    filament_mat = emissive("Water_Flow_Filaments", (0.035, 0.48, 0.82), 0.9)
+    for lane in range(3):
+        phase = lane * (math.tau / 3.0)
+        points = []
+        for step in range(13):
+            t = step / 12.0
+            yy = tunnel_y_start + 0.18 + t * (tunnel_y_end - tunnel_y_start - 0.36)
+            angle = phase + t * math.tau * 2.1
+            radius = 0.105
+            points.append((radius * math.cos(angle), yy,
+                           3.28 + radius * math.sin(angle)))
+        curve_tube("Helical_Water_Flow_Filament", points, 0.008, filament_mat, 8)
+
+    # Moving pulse droplets travel along the vessel while gently changing
+    # their visible position around its axis.
+    for i in range(8):
+        pulse = uv("Directional_Flow_Pulse", (0,0,3.28),
+                   (0.020,0.075,0.020), water, 20, 12)
+        phase = i * 1.17
+        for frame, yy, turns in [(1,0.0,0.0),(120,1.7,0.65),
+                                 (240,3.5,1.35),(END,5.2,2.0)]:
+            angle = phase + turns * math.tau
+            radius = 0.075
+            pulse.location = (radius*math.cos(angle), yy,
+                              3.28 + radius*math.sin(angle))
+            pulse.keyframe_insert(data_path="location", frame=frame)
+            pulse.scale = (0.020,0.075,0.020)
+            pulse.keyframe_insert(data_path="scale", frame=frame)
+
     # V12: a layered stream of larger beads plus fine moving micro-droplets.
     # Their orbital motion is screen-visible in the head-on macro view.
     for i in range(6):
