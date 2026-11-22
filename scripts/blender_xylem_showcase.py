@@ -296,8 +296,10 @@ def main():
         # Leaves sit along the outer twig network, with varied depth and angle
         # so the canopy reads as one branching crown instead of five round blobs.
         for li in range(13):
-            angle = (li / 13.0) * math.tau + ci * 0.61
-            radial = 0.34 + 0.16 * ((li * 7 + ci * 3) % 5) / 4.0
+            angle = (li / 13.0) * math.tau + ci * 0.61 + 0.13 * math.sin(li * 2.1 + ci)
+            # Broader, irregular distribution lets adjacent leaf groups merge into
+            # a continuous crown while preserving visible gaps between twigs.
+            radial = 0.48 + 0.28 * ((li * 7 + ci * 3) % 5) / 4.0
             center = (cx + math.cos(angle) * spread * radial,
                       -0.34 + 0.16 * math.sin(li * 1.7 + ci),
                       cz + math.sin(angle) * spread * radial * 0.72)
@@ -428,7 +430,15 @@ def main():
             radius = 0.105
             points.append((radius * math.cos(angle), yy,
                            3.28 + radius * math.sin(angle)))
-        curve_tube("Helical_Water_Flow_Filament", points, 0.014, filament_mat, 8)
+        curve_tube("Helical_Water_Flow_Filament", points, 0.018, filament_mat, 8)
+
+    # Animate the filament glow so the vessel wall carries moving-looking
+    # highlights even between the individual water pulses.
+    filament_bsdf = filament_mat.node_tree.nodes.get("Principled BSDF")
+    for frame, strength in [(1,0.45),(75,1.25),(150,0.55),(225,1.35),(END,0.55)]:
+        filament_bsdf.inputs["Emission Strength"].default_value = strength
+        filament_bsdf.inputs["Emission Strength"].keyframe_insert(
+            data_path="default_value", frame=frame)
 
     # Moving pulse droplets travel along the vessel while gently changing
     # their visible position around its axis.
@@ -441,12 +451,12 @@ def main():
         for frame, yy, turns in [(1,-0.15,0.0),(120,1.15,0.65),
                                  (240,2.65,1.35),(END,4.15,2.0)]:
             angle = phase + turns * math.tau
-            radius = 0.19
+            radius = 0.23
             pulse.location = (radius*math.cos(angle), yy,
                               3.28 + radius*math.sin(angle))
             pulse.keyframe_insert(data_path="location", frame=frame)
-            pulse_size = 1.0 + 0.32 * math.sin(angle + i)
-            pulse.scale = (0.026*pulse_size,0.11*pulse_size,0.026*pulse_size)
+            pulse_size = 1.0 + 0.38 * math.sin(angle + i)
+            pulse.scale = (0.034*pulse_size,0.13*pulse_size,0.034*pulse_size)
             pulse.keyframe_insert(data_path="scale", frame=frame)
 
     # V12: a layered stream of larger beads plus fine moving micro-droplets.
@@ -499,7 +509,7 @@ def main():
 
     # A gradual, continuous dolly-in; the final target sits on the actual
     # front-facing xylem window rather than the trunk's centre.
-    key_location(camera, 1, (0,-18.2,4.45))
+    key_location(camera, 1, (0,-17.2,4.40))
     key_location(camera, 105, (0,-15.8,4.05))
     key_location(camera, 210, (0,-8.2,3.55))
     key_location(camera, 275, (0,-1.65,3.28))
