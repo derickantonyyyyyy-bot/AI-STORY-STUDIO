@@ -224,7 +224,7 @@ def main():
     canopy_centres = [(-1.0,5.3,0.85),(0,5.8,1.05),(1.0,5.25,0.82),(-.45,6.25,.72),(.55,6.35,.70)]
     for i, (x,z,s) in enumerate(canopy_centres):
         # Smaller foliage masses let the individual leaves and branch network define the silhouette.
-        uv("Canopy_Cluster", (x,0.15,z), (s*0.48,0.30,s*0.43), green if i%2 else green_light)
+        uv("Canopy_Cluster", (x,0.15,z), (s*0.25,0.18,s*0.22), green if i%2 else green_light)
     branch_mat = material("Canopy_Branches", (0.19,0.075,0.032), 0.82)
     for i, (x,z,s) in enumerate(canopy_centres):
         start_x = -0.08 if x < 0 else 0.08
@@ -293,15 +293,20 @@ def main():
         return obj
 
     for ci, (cx, cz, spread) in enumerate(canopy_centres):
-        for li in range(9):
-            angle = (li / 9.0) * math.tau + ci * 0.47
-            direction = (math.cos(angle), 0.20 * math.sin(li * 1.3), math.sin(angle) * 0.48 + 0.24)
-            center = (cx + math.cos(angle) * spread * 0.43,
-                      -0.30 + 0.12 * math.sin(li * 1.8),
-                      cz + math.sin(angle) * spread * 0.34)
-            make_leaf("Canopy_Leaf", center, 0.48 + (li % 2) * 0.05,
-                      0.145 + (li % 2) * 0.015, direction,
-                      green_light if (li + ci) % 4 == 0 else green)
+        # Leaves sit along the outer twig network, with varied depth and angle
+        # so the canopy reads as one branching crown instead of five round blobs.
+        for li in range(13):
+            angle = (li / 13.0) * math.tau + ci * 0.61
+            radial = 0.34 + 0.16 * ((li * 7 + ci * 3) % 5) / 4.0
+            center = (cx + math.cos(angle) * spread * radial,
+                      -0.34 + 0.16 * math.sin(li * 1.7 + ci),
+                      cz + math.sin(angle) * spread * radial * 0.72)
+            direction = (math.cos(angle + 0.45),
+                         0.18 * math.sin(li * 1.1 + ci),
+                         0.34 + 0.42 * math.sin(angle))
+            make_leaf("Canopy_Leaf", center, 0.39 + (li % 3) * 0.045,
+                      0.115 + (li % 2) * 0.018, direction,
+                      green_light if (li + ci) % 5 == 0 else green)
 
     # Integrated trunk cutaway: a slim bark-framed window sits against the trunk,
     # so the wood and vessels read as part of the tree rather than a floating medallion.
@@ -421,11 +426,12 @@ def main():
         for frame, yy, turns in [(1,0.0,0.0),(120,1.7,0.65),
                                  (240,3.5,1.35),(END,5.2,2.0)]:
             angle = phase + turns * math.tau
-            radius = 0.075
+            radius = 0.16
             pulse.location = (radius*math.cos(angle), yy,
                               3.28 + radius*math.sin(angle))
             pulse.keyframe_insert(data_path="location", frame=frame)
-            pulse.scale = (0.020,0.075,0.020)
+            pulse_size = 1.0 + 0.28 * math.sin(angle + i)
+            pulse.scale = (0.024*pulse_size,0.095*pulse_size,0.024*pulse_size)
             pulse.keyframe_insert(data_path="scale", frame=frame)
 
     # V12: a layered stream of larger beads plus fine moving micro-droplets.
@@ -437,12 +443,12 @@ def main():
         for frame, yy, turns in [(1, base_y, 0.0), (120, base_y + 0.95, 0.9),
                                  (240, base_y + 1.95, 1.9), (END, base_y + 3.0, 2.9)]:
             angle = phase + turns * math.tau
-            radius = 0.13
+            radius = 0.205
             drop.location = (radius * math.cos(angle), yy,
                              3.28 + radius * math.sin(angle))
             drop.keyframe_insert(data_path="location", frame=frame)
-            pulse = 1.0 + 0.12 * math.sin(angle)
-            drop.scale = (0.046*pulse, 0.082*pulse, 0.046*pulse)
+            pulse = 1.0 + 0.20 * math.sin(angle + i * 0.4)
+            drop.scale = (0.036*pulse, 0.072*pulse, 0.036*pulse)
             drop.keyframe_insert(data_path="scale", frame=frame)
 
     # Fine droplets add a continuous-looking stream between the larger beads.
@@ -453,7 +459,7 @@ def main():
         for frame, yy, turns in [(1,base_y,0.0),(120,base_y+1.0,0.75),
                                  (240,base_y+2.0,1.55),(END,base_y+3.0,2.35)]:
             angle = phase + turns * math.tau
-            radius = 0.19
+            radius = 0.225
             bead.location = (radius*math.cos(angle), yy,
                              3.28+radius*math.sin(angle))
             bead.keyframe_insert(data_path="location", frame=frame)
