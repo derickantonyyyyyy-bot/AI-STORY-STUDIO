@@ -304,7 +304,20 @@ def main():
             direction = (math.cos(angle + 0.45),
                          0.18 * math.sin(li * 1.1 + ci),
                          0.34 + 0.42 * math.sin(angle))
-            make_leaf("Canopy_Leaf", center, 0.39 + (li % 3) * 0.045,
+            leaf_length = 0.39 + (li % 3) * 0.045
+            leaf_direction = Vector(direction).normalized()
+            leaf_base = Vector(center) - leaf_direction * (leaf_length * 0.43)
+            # A fine, curved twig reaches each leaf base so blades visibly grow
+            # from the branch network instead of appearing as detached shapes.
+            twig_anchor = Vector((cx + math.cos(angle) * spread * 0.12,
+                                  -0.18 + 0.025 * math.sin(li + ci),
+                                  cz + math.sin(angle) * spread * 0.10))
+            twig_mid = twig_anchor.lerp(leaf_base, 0.58)
+            twig_mid.z += 0.035 * math.sin(angle * 2.0 + ci)
+            curve_tube("Leaf_Attachment_Twig",
+                       [tuple(twig_anchor), tuple(twig_mid), tuple(leaf_base)],
+                       0.0085, branch_mat, 8)
+            make_leaf("Canopy_Leaf", center, leaf_length,
                       0.115 + (li % 2) * 0.018, direction,
                       green_light if (li + ci) % 5 == 0 else green)
 
@@ -415,23 +428,25 @@ def main():
             radius = 0.105
             points.append((radius * math.cos(angle), yy,
                            3.28 + radius * math.sin(angle)))
-        curve_tube("Helical_Water_Flow_Filament", points, 0.008, filament_mat, 8)
+        curve_tube("Helical_Water_Flow_Filament", points, 0.014, filament_mat, 8)
 
     # Moving pulse droplets travel along the vessel while gently changing
     # their visible position around its axis.
-    for i in range(8):
+    for i in range(12):
         pulse = uv("Directional_Flow_Pulse", (0,0,3.28),
                    (0.020,0.075,0.020), water, 20, 12)
         phase = i * 1.17
-        for frame, yy, turns in [(1,0.0,0.0),(120,1.7,0.65),
-                                 (240,3.5,1.35),(END,5.2,2.0)]:
+        # Pulses advance through the visible near section of the lumen while
+        # gently changing radial position, creating readable forward travel.
+        for frame, yy, turns in [(1,-0.15,0.0),(120,1.15,0.65),
+                                 (240,2.65,1.35),(END,4.15,2.0)]:
             angle = phase + turns * math.tau
-            radius = 0.16
+            radius = 0.19
             pulse.location = (radius*math.cos(angle), yy,
                               3.28 + radius*math.sin(angle))
             pulse.keyframe_insert(data_path="location", frame=frame)
-            pulse_size = 1.0 + 0.28 * math.sin(angle + i)
-            pulse.scale = (0.024*pulse_size,0.095*pulse_size,0.024*pulse_size)
+            pulse_size = 1.0 + 0.32 * math.sin(angle + i)
+            pulse.scale = (0.026*pulse_size,0.11*pulse_size,0.026*pulse_size)
             pulse.keyframe_insert(data_path="scale", frame=frame)
 
     # V12: a layered stream of larger beads plus fine moving micro-droplets.
