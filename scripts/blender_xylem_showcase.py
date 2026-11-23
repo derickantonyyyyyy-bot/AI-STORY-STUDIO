@@ -333,24 +333,24 @@ def main():
 
     # Integrated trunk cutaway: a slim bark-framed window sits against the trunk,
     # so the wood and vessels read as part of the tree rather than a floating medallion.
-    cutaway_frame = uv("Integrated_Bark_Cutaway_Rim", (0,-0.485,3.05), (0.46,0.075,1.18), bark, 48, 32)
-    cutaway_wood = uv("Exposed_Trunk_Wood", (0,-0.548,3.05), (0.365,0.045,1.08), wood, 48, 32)
+    cutaway_frame = uv("Integrated_Bark_Cutaway_Rim", (0,-0.485,3.05), (0.39,0.060,1.02), bark, 48, 32)
+    cutaway_wood = uv("Exposed_Trunk_Wood", (0,-0.548,3.05), (0.315,0.040,0.94), wood, 48, 32)
     # Fine vertical grain lines inside the exposed wood.
     for i in range(9):
-        x = -0.30 + i * 0.075
-        curve_tube("Vertical_Wood_Grain", [(x,-0.595,2.18),(x*0.98,-0.598,2.75),(x*0.94,-0.598,3.35),(x*0.90,-0.59,3.92)], 0.008, ring_dark)
+        x = -0.24 + i * 0.060
+        curve_tube("Vertical_Wood_Grain", [(x,-0.595,2.35),(x*0.98,-0.598,2.78),(x*0.94,-0.598,3.32),(x*0.90,-0.59,3.76)], 0.007, ring_dark)
     # A compact cross-section inset is embedded in the exposed trunk window.
-    disc = cylinder("Integrated_Xylem_Cross_Section", (0,-0.625,3.28), 0.32, 0.055, wood, 96, (math.radians(90),0,0), 0.014)
-    for radius in [0.10,0.16,0.22,0.28]:
+    disc = cylinder("Integrated_Xylem_Cross_Section", (0,-0.625,3.28), 0.265, 0.045, wood, 96, (math.radians(90),0,0), 0.012)
+    for radius in [0.075,0.125,0.175,0.225]:
         bpy.ops.mesh.primitive_torus_add(major_radius=radius, minor_radius=0.009, major_segments=72, minor_segments=8, location=(0,-0.66,3.28), rotation=(math.radians(90),0,0))
         apply_mat(bpy.context.object, ring_dark)
     uv("Tree_Pith", (0,-0.675,3.28), (0.045,0.018,0.045), ring_dark, 24, 16)
 
     # Xylem vessel openings sized to fit the smaller, integrated wood inset.
-    vessel_positions = [(-.17,3.37),(-.075,3.46),(.06,3.45),(.18,3.36),(-.17,3.18),(-.07,3.10),(.08,3.12),(.18,3.20),(0,3.28)]
+    vessel_positions = [(-.14,3.355),(-.06,3.43),(.05,3.425),(.145,3.35),(-.14,3.205),(-.06,3.14),(.065,3.155),(.145,3.22),(0,3.28)]
     for i,(x,z) in enumerate(vessel_positions):
-        uv("Vessel_Rim", (x,-0.682,z), (0.042,0.012,0.042), ring_dark, 24, 16)
-        uv("Xylem_Vessel", (x,-0.698,z), (0.029,0.010,0.029), xylem_mat, 24, 16)
+        uv("Vessel_Rim", (x,-0.682,z), (0.035,0.012,0.035), ring_dark, 24, 16)
+        uv("Xylem_Vessel", (x,-0.698,z), (0.024,0.010,0.024), xylem_mat, 24, 16)
         bead = uv("Water_Bead", (x,-0.715,z), (0.014,0.008,0.014), water, 20, 12)
         bead.location.z = z - 0.20
         bead.keyframe_insert(data_path="location", frame=70 + (i % 3) * 12)
@@ -438,7 +438,7 @@ def main():
             radius = 0.135
             points.append((radius * math.cos(angle), yy,
                            3.28 + radius * math.sin(angle)))
-        curve_tube("Helical_Water_Flow_Filament", points, 0.022, filament_mat, 8)
+        curve_tube("Helical_Water_Flow_Filament", points, 0.030, filament_mat, 8)
 
     # Animate the filament glow so the vessel wall carries moving-looking
     # highlights even between the individual water pulses.
@@ -448,12 +448,28 @@ def main():
         filament_bsdf.inputs["Emission Strength"].keyframe_insert(
             data_path="default_value", frame=frame)
 
+    # V21: strengthen the continuous water ribbons; moving highlights travel
+    # along these connected paths instead of relying on isolated round beads.
+    central_flow_mat = flow_mat
+    for lane in range(3):
+        phase = lane * (math.tau / 3.0)
+        ribbon_points = []
+        for step in range(25):
+            t = step / 24.0
+            yy = tunnel_y_start + 0.12 + t * (tunnel_y_end - tunnel_y_start - 0.24)
+            angle = phase + t * math.tau * 1.55
+            radius = 0.075 + 0.018 * math.sin(t * math.tau * 2.0 + lane)
+            ribbon_points.append((radius * math.cos(angle), yy,
+                                  3.28 + radius * math.sin(angle)))
+        curve_tube("Continuous_Xylem_Water_Ribbon", ribbon_points,
+                   0.026, central_flow_mat, 8)
+
     # V20: replace bead-like macro droplets with short travelling streaks.
     # Each streak is aligned tangentially to the helical path so it reads as a
     # moving highlight in the head-on vessel view, not as another round bead.
     for i in range(10):
         streak = uv("Travelling_Water_Flow_Streak", (0,0,3.28),
-                    (0.018,0.018,0.11), filament_mat, 20, 12)
+                    (0.016,0.016,0.145), filament_mat, 20, 12)
         phase = i * 2.399963
         offset = (i % 4) * 0.28
         for frame, yy, turns in [(1,-0.10+offset,0.0),
@@ -489,7 +505,7 @@ def main():
 
     # A gradual, continuous dolly-in; the final target sits on the actual
     # front-facing xylem window rather than the trunk's centre.
-    key_location(camera, 1, (0,-16.0,4.32))
+    key_location(camera, 1, (0,-15.5,4.32))
     key_location(camera, 105, (0,-15.8,4.05))
     key_location(camera, 210, (0,-8.2,3.55))
     key_location(camera, 275, (0,-1.65,3.28))
@@ -503,7 +519,7 @@ def main():
     ]:
         target.location = loc
         target.keyframe_insert(data_path="location", frame=frame)
-    for frame,lens in [(1,42),(105,40),(210,48),(275,48),(END,48)]:
+    for frame,lens in [(1,44),(105,40),(210,48),(275,48),(END,48)]:
         camera.data.lens = lens
         camera.data.keyframe_insert(data_path="lens", frame=frame)
 
