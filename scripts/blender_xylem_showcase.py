@@ -333,15 +333,15 @@ def main():
 
     # Integrated trunk cutaway: a slim bark-framed window sits against the trunk,
     # so the wood and vessels read as part of the tree rather than a floating medallion.
-    cutaway_frame = uv("Integrated_Bark_Cutaway_Rim", (0,-0.485,3.05), (0.49,0.075,1.18), bark, 48, 32)
-    cutaway_wood = uv("Exposed_Trunk_Wood", (0,-0.548,3.05), (0.405,0.045,1.08), wood, 48, 32)
+    cutaway_frame = uv("Integrated_Bark_Cutaway_Rim", (0,-0.485,3.05), (0.46,0.075,1.18), bark, 48, 32)
+    cutaway_wood = uv("Exposed_Trunk_Wood", (0,-0.548,3.05), (0.365,0.045,1.08), wood, 48, 32)
     # Fine vertical grain lines inside the exposed wood.
     for i in range(9):
         x = -0.30 + i * 0.075
         curve_tube("Vertical_Wood_Grain", [(x,-0.595,2.18),(x*0.98,-0.598,2.75),(x*0.94,-0.598,3.35),(x*0.90,-0.59,3.92)], 0.008, ring_dark)
     # A compact cross-section inset is embedded in the exposed trunk window.
-    disc = cylinder("Integrated_Xylem_Cross_Section", (0,-0.625,3.28), 0.39, 0.055, wood, 96, (math.radians(90),0,0), 0.018)
-    for radius in [0.12,0.20,0.28,0.34]:
+    disc = cylinder("Integrated_Xylem_Cross_Section", (0,-0.625,3.28), 0.32, 0.055, wood, 96, (math.radians(90),0,0), 0.014)
+    for radius in [0.10,0.16,0.22,0.28]:
         bpy.ops.mesh.primitive_torus_add(major_radius=radius, minor_radius=0.009, major_segments=72, minor_segments=8, location=(0,-0.66,3.28), rotation=(math.radians(90),0,0))
         apply_mat(bpy.context.object, ring_dark)
     uv("Tree_Pith", (0,-0.675,3.28), (0.045,0.018,0.045), ring_dark, 24, 16)
@@ -448,55 +448,26 @@ def main():
         filament_bsdf.inputs["Emission Strength"].keyframe_insert(
             data_path="default_value", frame=frame)
 
-    # Moving pulse droplets travel along the vessel while gently changing
-    # their visible position around its axis.
-    for i in range(24):
-        pulse = uv("Directional_Flow_Pulse", (0,0,3.28),
-                   (0.020,0.075,0.020), filament_mat, 20, 12)
-        phase = i * 2.399963
-        # Pulses advance through the visible near section of the lumen while
-        # gently changing radial position, creating readable forward travel.
-        offset = (i % 3) * 0.34
-        for frame, yy, turns in [(1,-0.15+offset,0.0),(120,1.15+offset,1.35),
-                                 (240,2.65+offset,2.75),(END,4.15+offset,4.15)]:
-            angle = phase + turns * math.tau
-            radius = 0.255 + 0.045 * math.sin(i * 1.7)
-            pulse.location = (radius*math.cos(angle), yy,
-                              3.28 + radius*math.sin(angle))
-            pulse.keyframe_insert(data_path="location", frame=frame)
-            pulse_size = 1.0 + 0.38 * math.sin(angle + i)
-            pulse.scale = (0.040*pulse_size,0.145*pulse_size,0.040*pulse_size)
-            pulse.keyframe_insert(data_path="scale", frame=frame)
-
-    # V12: a layered stream of larger beads plus fine moving micro-droplets.
-    # Their orbital motion is screen-visible in the head-on macro view.
-    for i in range(6):
-        drop = uv("Macro_Water_Droplet", (0, 0, 3.28), (0.046, 0.082, 0.046), water, 24, 16)
-        phase = i * (math.tau / 6.0)
-        base_y = 0.12 + i * 0.68
-        for frame, yy, turns in [(1, base_y, 0.0), (120, base_y + 0.95, 0.9),
-                                 (240, base_y + 1.95, 1.9), (END, base_y + 3.0, 2.9)]:
-            angle = phase + turns * math.tau
-            radius = 0.205
-            drop.location = (radius * math.cos(angle), yy,
-                             3.28 + radius * math.sin(angle))
-            drop.keyframe_insert(data_path="location", frame=frame)
-            pulse = 1.0 + 0.20 * math.sin(angle + i * 0.4)
-            drop.scale = (0.036*pulse, 0.072*pulse, 0.036*pulse)
-            drop.keyframe_insert(data_path="scale", frame=frame)
-
-    # Fine droplets add a continuous-looking stream between the larger beads.
+    # V20: replace bead-like macro droplets with short travelling streaks.
+    # Each streak is aligned tangentially to the helical path so it reads as a
+    # moving highlight in the head-on vessel view, not as another round bead.
     for i in range(10):
-        bead = uv("Micro_Water_Droplet", (0, 0, 3.28), (0.018, 0.032, 0.018), water, 16, 10)
+        streak = uv("Travelling_Water_Flow_Streak", (0,0,3.28),
+                    (0.018,0.018,0.11), filament_mat, 20, 12)
         phase = i * 2.399963
-        base_y = 0.35 + i * 0.53
-        for frame, yy, turns in [(1,base_y,0.0),(120,base_y+1.0,0.75),
-                                 (240,base_y+2.0,1.55),(END,base_y+3.0,2.35)]:
+        offset = (i % 4) * 0.28
+        for frame, yy, turns in [(1,-0.10+offset,0.0),
+                                 (120,1.05+offset,1.25),
+                                 (240,2.55+offset,2.55),
+                                 (END,4.05+offset,3.85)]:
             angle = phase + turns * math.tau
-            radius = 0.225
-            bead.location = (radius*math.cos(angle), yy,
-                             3.28+radius*math.sin(angle))
-            bead.keyframe_insert(data_path="location", frame=frame)
+            radius = 0.19
+            streak.location = (radius*math.cos(angle), yy,
+                               3.28 + radius*math.sin(angle))
+            tangent = Vector((-math.sin(angle), 0.0, math.cos(angle)))
+            streak.rotation_euler = tangent.to_track_quat("Z", "Y").to_euler()
+            streak.keyframe_insert(data_path="location", frame=frame)
+            streak.keyframe_insert(data_path="rotation_euler", frame=frame)
 
     # No floating 3D labels: clean, synchronized captions will be composited later.
 
@@ -518,7 +489,7 @@ def main():
 
     # A gradual, continuous dolly-in; the final target sits on the actual
     # front-facing xylem window rather than the trunk's centre.
-    key_location(camera, 1, (0,-16.7,4.32))
+    key_location(camera, 1, (0,-16.0,4.32))
     key_location(camera, 105, (0,-15.8,4.05))
     key_location(camera, 210, (0,-8.2,3.55))
     key_location(camera, 275, (0,-1.65,3.28))
@@ -532,7 +503,7 @@ def main():
     ]:
         target.location = loc
         target.keyframe_insert(data_path="location", frame=frame)
-    for frame,lens in [(1,40),(105,40),(210,48),(275,48),(END,48)]:
+    for frame,lens in [(1,42),(105,40),(210,48),(275,48),(END,48)]:
         camera.data.lens = lens
         camera.data.keyframe_insert(data_path="lens", frame=frame)
 
