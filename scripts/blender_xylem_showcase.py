@@ -202,6 +202,22 @@ def main():
     trunk = cylinder("Tree_Trunk", (0, 0.0, 2.55), 0.53, 5.6, bark, 64, bevel=0.12)
     trunk.scale.x = 0.88
     trunk.scale.y = 0.88
+    # V25: carve a real short passage through the trunk so the vessel mouth
+    # is not merely drawn over the solid bark surface.
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    bpy.ops.mesh.primitive_cylinder_add(
+        vertices=96, radius=0.305, depth=1.42,
+        location=(0,-0.02,3.28), rotation=(math.radians(90),0,0)
+    )
+    trunk_cutter = bpy.context.object
+    trunk_cutter.name = "Temporary_Xylem_Boolean_Cutter"
+    boolean = trunk.modifiers.new("True_Xylem_Entrance", "BOOLEAN")
+    boolean.operation = "DIFFERENCE"
+    boolean.solver = "EXACT"
+    boolean.object = trunk_cutter
+    bpy.context.view_layer.objects.active = trunk
+    bpy.ops.object.modifier_apply(modifier=boolean.name)
+    bpy.data.objects.remove(trunk_cutter, do_unlink=True)
     for i in range(9):
         x = -0.38 + i * 0.095
         curve_tube("Bark_Ridge", [(x, -0.47, 0.0), (x*0.9, -0.49, 1.4), (x*0.75, -0.45, 3.1), (x*0.7, -0.36, 5.0)], 0.018, root_mat)
@@ -504,8 +520,8 @@ def main():
     # V24: keep the camera just outside the solid trunk, aligned with the
     # open vessel mouth. The trunk is a solid mesh, so moving through its
     # volume would occlude the view; looking through the mouth reveals the lumen.
-    key_location(camera, 275, (0,-1.25,3.28))
-    key_location(camera, END, (0,-1.20,3.28))
+    key_location(camera, 275, (0,-1.42,3.28))
+    key_location(camera, END, (0,-1.38,3.28))
     for frame, loc in [
         (1,(0,0.0,2.45)),
         (105,(0,-0.12,2.72)),
