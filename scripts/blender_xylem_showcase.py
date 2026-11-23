@@ -520,10 +520,14 @@ def main():
     # V24: keep the camera just outside the solid trunk, aligned with the
     # open vessel mouth. The trunk is a solid mesh, so moving through its
     # volume would occlude the view; looking through the mouth reveals the lumen.
-    # V26: place the camera just inside the Boolean-carved trunk passage,
-    # beyond the entrance lip, so the final view looks down the vessel lumen.
-    key_location(camera, 275, (0,-0.28,3.28))
-    key_location(camera, END, (0,-0.22,3.28))
+    # V27: keep the camera outside the trunk and look through the real
+    # Boolean-carved entrance along the vessel axis. A wider macro lens keeps
+    # the complete mouth in frame while preserving the tunnel depth.
+    key_location(camera, 275, (0,-1.55,3.28))
+    key_location(camera, END, (0,-1.55,3.28))
+    for frame, lens in [(1,48),(210,48),(275,32),(END,32)]:
+        camera.data.lens = lens
+        camera.data.keyframe_insert(data_path="lens", frame=frame)
     for frame, loc in [
         (1,(0,0.0,2.45)),
         (105,(0,-0.12,2.72)),
