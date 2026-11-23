@@ -175,8 +175,9 @@ def main():
     world.use_nodes = True
     # Soft cinematic blue studio environment: brighter than the earlier dark teal,
     # while keeping enough contrast for the bark, roots and glowing xylem.
-    world.node_tree.nodes["Background"].inputs["Color"].default_value = (0.055, 0.12, 0.19, 1)
-    world.node_tree.nodes["Background"].inputs["Strength"].default_value = 0.48
+    # V19: a lighter, softer blue studio world lifts the whole scene without washing out the wood.
+    world.node_tree.nodes["Background"].inputs["Color"].default_value = (0.12, 0.23, 0.34, 1)
+    world.node_tree.nodes["Background"].inputs["Strength"].default_value = 0.62
 
     bpy.ops.mesh.primitive_cube_add(size=1, location=(0, 0.85, -0.05))
     soil_block = bpy.context.object
@@ -299,18 +300,20 @@ def main():
     for ci, (cx, cz, spread) in enumerate(canopy_centres):
         # Leaves sit along the outer twig network, with varied depth and angle
         # so the canopy reads as one branching crown instead of five round blobs.
-        for li in range(21):
-            angle = (li / 21.0) * math.tau + ci * 0.61 + 0.24 * math.sin(li * 2.1 + ci)
+        for li in range(26):
+            # Golden-angle spacing plus gentle deterministic variation avoids a radial rosette.
+            angle = li * 2.399963 + ci * 0.83 + 0.20 * math.sin(li * 1.73 + ci)
+            angle += 0.10 * math.sin(li * 0.47 + ci * 1.9)
             # Uneven radial and angular spacing breaks the radial rosette pattern;
             # neighboring branches overlap into a more continuous crown silhouette.
-            radial = 0.28 + 0.66 * ((li * 11 + ci * 5) % 9) / 8.0
+            radial = 0.22 + 0.78 * ((li * 13 + ci * 7) % 17) / 16.0
             center = (cx + math.cos(angle) * spread * radial,
                       -0.34 + 0.16 * math.sin(li * 1.7 + ci),
                       cz + math.sin(angle) * spread * radial * 0.72)
             direction = (math.cos(angle + 0.45),
                          0.18 * math.sin(li * 1.1 + ci),
                          0.34 + 0.42 * math.sin(angle))
-            leaf_length = 0.40 + (li % 5) * 0.052
+            leaf_length = 0.38 + (li % 7) * 0.047
             leaf_direction = Vector(direction).normalized()
             leaf_base = Vector(center) - leaf_direction * (leaf_length * 0.43)
             # A fine, curved twig reaches each leaf base so blades visibly grow
@@ -325,7 +328,7 @@ def main():
                        [tuple(twig_anchor), tuple(twig_mid), tuple(leaf_base)],
                        0.010, branch_mat, 8)
             make_leaf("Canopy_Leaf", center, leaf_length,
-                      0.125 + (li % 3) * 0.014, direction,
+                      0.118 + (li % 4) * 0.017, direction,
                       green_light if (li + ci) % 5 == 0 else green)
 
     # Integrated trunk cutaway: a slim bark-framed window sits against the trunk,
@@ -447,17 +450,17 @@ def main():
 
     # Moving pulse droplets travel along the vessel while gently changing
     # their visible position around its axis.
-    for i in range(18):
+    for i in range(24):
         pulse = uv("Directional_Flow_Pulse", (0,0,3.28),
                    (0.020,0.075,0.020), filament_mat, 20, 12)
         phase = i * 2.399963
         # Pulses advance through the visible near section of the lumen while
         # gently changing radial position, creating readable forward travel.
         offset = (i % 3) * 0.34
-        for frame, yy, turns in [(1,-0.15+offset,0.0),(120,1.15+offset,0.85),
-                                 (240,2.65+offset,1.75),(END,4.15+offset,2.7)]:
+        for frame, yy, turns in [(1,-0.15+offset,0.0),(120,1.15+offset,1.35),
+                                 (240,2.65+offset,2.75),(END,4.15+offset,4.15)]:
             angle = phase + turns * math.tau
-            radius = 0.265 + 0.018 * math.sin(i * 1.7)
+            radius = 0.255 + 0.045 * math.sin(i * 1.7)
             pulse.location = (radius*math.cos(angle), yy,
                               3.28 + radius*math.sin(angle))
             pulse.keyframe_insert(data_path="location", frame=frame)
@@ -515,7 +518,7 @@ def main():
 
     # A gradual, continuous dolly-in; the final target sits on the actual
     # front-facing xylem window rather than the trunk's centre.
-    key_location(camera, 1, (0,-17.2,4.40))
+    key_location(camera, 1, (0,-16.7,4.32))
     key_location(camera, 105, (0,-15.8,4.05))
     key_location(camera, 210, (0,-8.2,3.55))
     key_location(camera, 275, (0,-1.65,3.28))
@@ -529,7 +532,7 @@ def main():
     ]:
         target.location = loc
         target.keyframe_insert(data_path="location", frame=frame)
-    for frame,lens in [(1,38),(105,40),(210,48),(275,48),(END,48)]:
+    for frame,lens in [(1,40),(105,40),(210,48),(275,48),(END,48)]:
         camera.data.lens = lens
         camera.data.keyframe_insert(data_path="lens", frame=frame)
 
