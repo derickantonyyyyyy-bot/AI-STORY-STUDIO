@@ -345,16 +345,17 @@ def main():
                     (x*0.94,-0.598,3.32),(x*0.90,-0.59,3.76)],
                    0.007, ring_dark)
 
-    # A single recessed lumen opening connects the trunk cutaway to the
-    # camera-facing internal vessel tunnel.
-    disc = cylinder("Single_Xylem_Lumen_Entrance", (0,-0.625,3.28),
-                    0.285, 0.045, wood, 96, (math.radians(90),0,0), 0.012)
-    uv("Xylem_Lumen_Inner_Shadow", (0,-0.657,3.28),
-       (0.245,0.012,0.245), ring_dark, 64, 32)
-    uv("Xylem_Lumen_Water_Core", (0,-0.671,3.28),
-       (0.105,0.010,0.105), xylem_mat, 48, 24)
+    # V23: leave the vessel mouth genuinely open. A thin annular bark/wood
+    # lip frames the entrance, but no disc or filled oval sits across the lumen.
+    bpy.ops.mesh.primitive_torus_add(
+        major_radius=0.292, minor_radius=0.018,
+        major_segments=96, minor_segments=12,
+        location=(0,-0.705,3.28), rotation=(math.radians(90),0,0)
+    )
+    apply_mat(bpy.context.object, wood)
+    bpy.context.object.name = "Open_Xylem_Entrance_Lip"
 
-    # Longitudinal blue channels remain embedded in the exposed wood.
+    # Five slim xylem channels converge toward the open vessel mouth.
     for i,x in enumerate([-0.21,-0.105,0.0,0.105,0.21]):
         curve_tube("Embedded_Xylem_Channel",
                    [(x,-0.606,2.18),(x*0.98,-0.610,2.62),
@@ -367,6 +368,11 @@ def main():
             for frame,z in [(1,2.20),(90,2.85),(180,3.42),(270,3.80),(END,4.05)]:
                 flow_drop.location.z = z + (i-2)*0.06
                 flow_drop.keyframe_insert(data_path="location", frame=frame)
+    # The central channel continues directly through the entrance and into
+    # the lumen, making the transition visually continuous.
+    curve_tube("Xylem_To_Vessel_Connector",
+               [(0,-0.61,3.28),(0,-0.74,3.28),(0,-0.92,3.28),
+                (0,-1.10,3.28)], 0.032, xylem_mat, 10)
 
     # V5 internal-vessel macro tunnel. This is a clean educational cutaway:
     # an open ring-and-fibre structure aligned with the camera's forward path.
@@ -419,16 +425,16 @@ def main():
             [(x, tunnel_y_start + n*(tunnel_y_end-tunnel_y_start)/5, z) for n in range(6)],
             0.018, tunnel_fibre_mat
         )
-    # A soft luminous central flow and staggered droplets move deeper through the lumen.
-    flow_mat = emissive("Xylem_Flow_Glow", (0.025, 0.32, 0.62), 0.65)
+    # One continuous central stream carries the viewer's eye into the lumen.
+    flow_mat = emissive("Xylem_Flow_Glow", (0.025, 0.42, 0.82), 1.05)
     curve_tube("Central_Water_Flow", [(0, tunnel_y_start+0.1, 3.28),
                (0, 1.2, 3.28), (0, 4.2, 3.28), (0, tunnel_y_end-0.2, 3.28)],
-               0.035, flow_mat)
+               0.048, flow_mat)
 
     # V13: three slim helical flow filaments make the stream read as directional
     # transport through the vessel, rather than isolated decorative beads.
     filament_mat = emissive("Water_Flow_Filaments", (0.035, 0.48, 0.82), 1.15)
-    for lane in range(4):
+    for lane in range(3):
         phase = lane * (math.tau / 4.0)
         points = []
         for step in range(13):
@@ -448,26 +454,13 @@ def main():
         filament_bsdf.inputs["Emission Strength"].keyframe_insert(
             data_path="default_value", frame=frame)
 
-    # V21: strengthen the continuous water ribbons; moving highlights travel
-    # along these connected paths instead of relying on isolated round beads.
-    central_flow_mat = flow_mat
-    for lane in range(3):
-        phase = lane * (math.tau / 3.0)
-        ribbon_points = []
-        for step in range(25):
-            t = step / 24.0
-            yy = tunnel_y_start + 0.12 + t * (tunnel_y_end - tunnel_y_start - 0.24)
-            angle = phase + t * math.tau * 1.55
-            radius = 0.075 + 0.018 * math.sin(t * math.tau * 2.0 + lane)
-            ribbon_points.append((radius * math.cos(angle), yy,
-                                  3.28 + radius * math.sin(angle)))
-        curve_tube("Continuous_Xylem_Water_Ribbon", ribbon_points,
-                   0.026, central_flow_mat, 8)
+    # Keep the macro stream visually simple: one central flow and three
+    # helical filaments, rather than several competing parallel ribbons.
 
     # V20: replace bead-like macro droplets with short travelling streaks.
     # Each streak is aligned tangentially to the helical path so it reads as a
     # moving highlight in the head-on vessel view, not as another round bead.
-    for i in range(10):
+    for i in range(6):
         streak = uv("Travelling_Water_Flow_Streak", (0,0,3.28),
                     (0.016,0.016,0.145), filament_mat, 20, 12)
         phase = i * 2.399963
@@ -508,14 +501,15 @@ def main():
     key_location(camera, 1, (0,-14.2,4.32))
     key_location(camera, 105, (0,-15.8,4.05))
     key_location(camera, 210, (0,-8.2,3.55))
-    key_location(camera, 275, (0,-1.65,3.28))
-    key_location(camera, END, (0,-1.65,3.28))
+    # The final camera positions move past the entrance and into the lumen.
+    key_location(camera, 275, (0,0.45,3.28))
+    key_location(camera, END, (0,0.70,3.28))
     for frame, loc in [
         (1,(0,0.0,2.45)),
         (105,(0,-0.12,2.72)),
         (210,(0,-0.55,3.05)),
-        (275,(0,1.65,3.45)),
-        (END,(0,1.65,3.45))
+        (275,(0,3.25,3.28)),
+        (END,(0,4.10,3.28))
     ]:
         target.location = loc
         target.keyframe_insert(data_path="location", frame=frame)
