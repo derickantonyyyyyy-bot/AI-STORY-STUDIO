@@ -501,9 +501,11 @@ def main():
     key_location(camera, 1, (0,-14.2,4.32))
     key_location(camera, 105, (0,-15.8,4.05))
     key_location(camera, 210, (0,-8.2,3.55))
-    # The final camera positions move past the entrance and into the lumen.
-    key_location(camera, 275, (0,0.45,3.28))
-    key_location(camera, END, (0,0.70,3.28))
+    # V24: keep the camera just outside the solid trunk, aligned with the
+    # open vessel mouth. The trunk is a solid mesh, so moving through its
+    # volume would occlude the view; looking through the mouth reveals the lumen.
+    key_location(camera, 275, (0,-1.25,3.28))
+    key_location(camera, END, (0,-1.20,3.28))
     for frame, loc in [
         (1,(0,0.0,2.45)),
         (105,(0,-0.12,2.72)),
