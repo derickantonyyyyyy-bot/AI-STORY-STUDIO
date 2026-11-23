@@ -331,43 +331,42 @@ def main():
                       0.118 + (li % 4) * 0.017, direction,
                       green_light if (li + ci) % 5 == 0 else green)
 
-    # Integrated trunk cutaway: a slim bark-framed window sits against the trunk,
-    # so the wood and vessels read as part of the tree rather than a floating medallion.
-    cutaway_frame = uv("Integrated_Bark_Cutaway_Rim", (0,-0.485,3.05), (0.39,0.060,1.02), bark, 48, 32)
-    cutaway_wood = uv("Exposed_Trunk_Wood", (0,-0.548,3.05), (0.315,0.040,0.94), wood, 48, 32)
-    # Fine vertical grain lines inside the exposed wood.
+    # V22: organic vertical bark opening with one clear xylem lumen.
+    # Remove the decorative nested circles and let the exposed wood grain,
+    # vertical channels and single vessel entrance explain the structure.
+    cutaway_frame = uv("Organic_Bark_Cutaway_Edge", (0,-0.485,3.05),
+                        (0.39,0.060,1.02), bark, 48, 32)
+    cutaway_wood = uv("Exposed_Vertical_Trunk_Wood", (0,-0.548,3.05),
+                      (0.315,0.040,0.94), wood, 48, 32)
     for i in range(9):
         x = -0.24 + i * 0.060
-        curve_tube("Vertical_Wood_Grain", [(x,-0.595,2.35),(x*0.98,-0.598,2.78),(x*0.94,-0.598,3.32),(x*0.90,-0.59,3.76)], 0.007, ring_dark)
-    # A compact cross-section inset is embedded in the exposed trunk window.
-    disc = cylinder("Integrated_Xylem_Cross_Section", (0,-0.625,3.28), 0.265, 0.045, wood, 96, (math.radians(90),0,0), 0.012)
-    for radius in [0.075,0.125,0.175,0.225]:
-        bpy.ops.mesh.primitive_torus_add(major_radius=radius, minor_radius=0.009, major_segments=72, minor_segments=8, location=(0,-0.66,3.28), rotation=(math.radians(90),0,0))
-        apply_mat(bpy.context.object, ring_dark)
-    uv("Tree_Pith", (0,-0.675,3.28), (0.045,0.018,0.045), ring_dark, 24, 16)
+        curve_tube("Vertical_Wood_Grain",
+                   [(x,-0.595,2.35),(x*0.98,-0.598,2.78),
+                    (x*0.94,-0.598,3.32),(x*0.90,-0.59,3.76)],
+                   0.007, ring_dark)
 
-    # Xylem vessel openings sized to fit the smaller, integrated wood inset.
-    vessel_positions = [(-.14,3.355),(-.06,3.43),(.05,3.425),(.145,3.35),(-.14,3.205),(-.06,3.14),(.065,3.155),(.145,3.22),(0,3.28)]
-    for i,(x,z) in enumerate(vessel_positions):
-        uv("Vessel_Rim", (x,-0.682,z), (0.035,0.012,0.035), ring_dark, 24, 16)
-        uv("Xylem_Vessel", (x,-0.698,z), (0.024,0.010,0.024), xylem_mat, 24, 16)
-        bead = uv("Water_Bead", (x,-0.715,z), (0.014,0.008,0.014), water, 20, 12)
-        bead.location.z = z - 0.20
-        bead.keyframe_insert(data_path="location", frame=70 + (i % 3) * 12)
-        bead.location.z = z + 0.20
-        bead.keyframe_insert(data_path="location", frame=190 + (i % 3) * 12)
-        bead.location.z = z - 0.20
-        bead.keyframe_insert(data_path="location", frame=310 + (i % 3) * 12)
+    # A single recessed lumen opening connects the trunk cutaway to the
+    # camera-facing internal vessel tunnel.
+    disc = cylinder("Single_Xylem_Lumen_Entrance", (0,-0.625,3.28),
+                    0.285, 0.045, wood, 96, (math.radians(90),0,0), 0.012)
+    uv("Xylem_Lumen_Inner_Shadow", (0,-0.657,3.28),
+       (0.245,0.012,0.245), ring_dark, 64, 32)
+    uv("Xylem_Lumen_Water_Core", (0,-0.671,3.28),
+       (0.105,0.010,0.105), xylem_mat, 48, 24)
 
-    # Water transport is visibly embedded in the trunk's exposed xylem window.
-    for i,x in enumerate([-0.23,-0.11,0.0,0.11,0.23]):
-        curve_tube("Embedded_Xylem_Channel", [(x,-0.606,2.02),(x*0.98,-0.610,2.48),(x*0.94,-0.610,3.00),(x*0.90,-0.605,4.02)], 0.012, xylem_mat)
-        for j in range(3):
-            z0 = 2.18 + j*0.48 + (i%2)*0.13
-            drop = uv("Ascending_Water_Drop", (x,-0.635,z0), (0.027,0.018,0.060), water, 20, 12)
-            for frame, dz in [(1,-0.28),(70,0.22),(140,0.78),(210,1.34),(END,1.90)]:
-                drop.location.z = z0 + dz
-                drop.keyframe_insert(data_path="location", frame=frame + i*3 + j*5)
+    # Longitudinal blue channels remain embedded in the exposed wood.
+    for i,x in enumerate([-0.21,-0.105,0.0,0.105,0.21]):
+        curve_tube("Embedded_Xylem_Channel",
+                   [(x,-0.606,2.18),(x*0.98,-0.610,2.62),
+                    (x*0.94,-0.610,3.10),(x*0.90,-0.605,3.88)],
+                   0.018, xylem_mat)
+        if i in (1,2,3):
+            flow_drop = uv("Ascending_Water_Streak",
+                           (x,-0.635,2.45), (0.012,0.014,0.075),
+                           water, 20, 12)
+            for frame,z in [(1,2.20),(90,2.85),(180,3.42),(270,3.80),(END,4.05)]:
+                flow_drop.location.z = z + (i-2)*0.06
+                flow_drop.keyframe_insert(data_path="location", frame=frame)
 
     # V5 internal-vessel macro tunnel. This is a clean educational cutaway:
     # an open ring-and-fibre structure aligned with the camera's forward path.
@@ -400,16 +399,17 @@ def main():
     for poly in wall_mesh.polygons:
         poly.use_smooth = True
 
-    # Repeating annular ribs remain visible against the continuous inner wall.
-    for k in range(18):
-        yy = tunnel_y_start + k * 0.49
+    # Sparse, shallow wall ridges give depth without creating a tunnel
+    # full of repeated circular hoops in the final macro composition.
+    for k in range(7):
+        yy = tunnel_y_start + k * 1.20
         bpy.ops.mesh.primitive_torus_add(
-            major_radius=tunnel_radius, minor_radius=0.022,
+            major_radius=tunnel_radius - 0.008, minor_radius=0.010,
             major_segments=48, minor_segments=8,
             location=(0, yy, 3.28), rotation=(math.radians(90), 0, 0)
         )
         apply_mat(bpy.context.object, tunnel_ring_mat)
-        bpy.context.object.name = "Internal_Vessel_Rib"
+        bpy.context.object.name = "Subtle_Vessel_Wall_Ridge"
     # Four longitudinal fibres define the inside of the vessel.
     for angle in [0, math.pi/2, math.pi, 3*math.pi/2]:
         x = math.cos(angle) * tunnel_radius
@@ -505,7 +505,7 @@ def main():
 
     # A gradual, continuous dolly-in; the final target sits on the actual
     # front-facing xylem window rather than the trunk's centre.
-    key_location(camera, 1, (0,-15.5,4.32))
+    key_location(camera, 1, (0,-14.2,4.32))
     key_location(camera, 105, (0,-15.8,4.05))
     key_location(camera, 210, (0,-8.2,3.55))
     key_location(camera, 275, (0,-1.65,3.28))
@@ -519,7 +519,7 @@ def main():
     ]:
         target.location = loc
         target.keyframe_insert(data_path="location", frame=frame)
-    for frame,lens in [(1,44),(105,40),(210,48),(275,48),(END,48)]:
+    for frame,lens in [(1,48),(105,40),(210,48),(275,48),(END,48)]:
         camera.data.lens = lens
         camera.data.keyframe_insert(data_path="lens", frame=frame)
 
