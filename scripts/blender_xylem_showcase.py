@@ -173,8 +173,10 @@ def main():
     world = bpy.data.worlds.new("Deep_Teal_Studio") if not bpy.data.worlds else bpy.data.worlds[0]
     scene.world = world
     world.use_nodes = True
-    world.node_tree.nodes["Background"].inputs["Color"].default_value = (0.012, 0.035, 0.052, 1)
-    world.node_tree.nodes["Background"].inputs["Strength"].default_value = 0.32
+    # Soft cinematic blue studio environment: brighter than the earlier dark teal,
+    # while keeping enough contrast for the bark, roots and glowing xylem.
+    world.node_tree.nodes["Background"].inputs["Color"].default_value = (0.055, 0.12, 0.19, 1)
+    world.node_tree.nodes["Background"].inputs["Strength"].default_value = 0.48
 
     bpy.ops.mesh.primitive_cube_add(size=1, location=(0, 0.85, -0.05))
     soil_block = bpy.context.object
@@ -297,18 +299,18 @@ def main():
     for ci, (cx, cz, spread) in enumerate(canopy_centres):
         # Leaves sit along the outer twig network, with varied depth and angle
         # so the canopy reads as one branching crown instead of five round blobs.
-        for li in range(17):
-            angle = (li / 17.0) * math.tau + ci * 0.61 + 0.19 * math.sin(li * 2.1 + ci)
-            # A wider, deliberately uneven crown silhouette; neighboring groups
-            # overlap at their edges without forming five round foliage balls.
-            radial = 0.34 + 0.58 * ((li * 7 + ci * 3) % 7) / 6.0
+        for li in range(21):
+            angle = (li / 21.0) * math.tau + ci * 0.61 + 0.24 * math.sin(li * 2.1 + ci)
+            # Uneven radial and angular spacing breaks the radial rosette pattern;
+            # neighboring branches overlap into a more continuous crown silhouette.
+            radial = 0.28 + 0.66 * ((li * 11 + ci * 5) % 9) / 8.0
             center = (cx + math.cos(angle) * spread * radial,
                       -0.34 + 0.16 * math.sin(li * 1.7 + ci),
                       cz + math.sin(angle) * spread * radial * 0.72)
             direction = (math.cos(angle + 0.45),
                          0.18 * math.sin(li * 1.1 + ci),
                          0.34 + 0.42 * math.sin(angle))
-            leaf_length = 0.43 + (li % 4) * 0.045
+            leaf_length = 0.40 + (li % 5) * 0.052
             leaf_direction = Vector(direction).normalized()
             leaf_base = Vector(center) - leaf_direction * (leaf_length * 0.43)
             # A fine, curved twig reaches each leaf base so blades visibly grow
@@ -422,18 +424,18 @@ def main():
 
     # V13: three slim helical flow filaments make the stream read as directional
     # transport through the vessel, rather than isolated decorative beads.
-    filament_mat = emissive("Water_Flow_Filaments", (0.035, 0.48, 0.82), 0.9)
-    for lane in range(3):
-        phase = lane * (math.tau / 3.0)
+    filament_mat = emissive("Water_Flow_Filaments", (0.035, 0.48, 0.82), 1.15)
+    for lane in range(4):
+        phase = lane * (math.tau / 4.0)
         points = []
         for step in range(13):
             t = step / 12.0
             yy = tunnel_y_start + 0.18 + t * (tunnel_y_end - tunnel_y_start - 0.36)
             angle = phase + t * math.tau * 2.1
-            radius = 0.105
+            radius = 0.135
             points.append((radius * math.cos(angle), yy,
                            3.28 + radius * math.sin(angle)))
-        curve_tube("Helical_Water_Flow_Filament", points, 0.018, filament_mat, 8)
+        curve_tube("Helical_Water_Flow_Filament", points, 0.022, filament_mat, 8)
 
     # Animate the filament glow so the vessel wall carries moving-looking
     # highlights even between the individual water pulses.
@@ -445,16 +447,17 @@ def main():
 
     # Moving pulse droplets travel along the vessel while gently changing
     # their visible position around its axis.
-    for i in range(12):
+    for i in range(18):
         pulse = uv("Directional_Flow_Pulse", (0,0,3.28),
                    (0.020,0.075,0.020), filament_mat, 20, 12)
-        phase = i * 1.17
+        phase = i * 2.399963
         # Pulses advance through the visible near section of the lumen while
         # gently changing radial position, creating readable forward travel.
-        for frame, yy, turns in [(1,-0.15,0.0),(120,1.15,0.65),
-                                 (240,2.65,1.35),(END,4.15,2.0)]:
+        offset = (i % 3) * 0.34
+        for frame, yy, turns in [(1,-0.15+offset,0.0),(120,1.15+offset,0.85),
+                                 (240,2.65+offset,1.75),(END,4.15+offset,2.7)]:
             angle = phase + turns * math.tau
-            radius = 0.27
+            radius = 0.265 + 0.018 * math.sin(i * 1.7)
             pulse.location = (radius*math.cos(angle), yy,
                               3.28 + radius*math.sin(angle))
             pulse.keyframe_insert(data_path="location", frame=frame)
@@ -533,13 +536,13 @@ def main():
     # Three-point studio lighting with soft highlights and a cool rim.
     bpy.ops.object.light_add(type="AREA", location=(-5,-7,9))
     key_light = bpy.context.object
-    key_light.data.energy = 1500
+    key_light.data.energy = 1850
     key_light.data.shape = "DISK"
     key_light.data.size = 7
     key_light.rotation_euler = (math.radians(25),0,math.radians(-25))
     bpy.ops.object.light_add(type="AREA", location=(5,-1,6))
     fill = bpy.context.object
-    fill.data.energy = 850
+    fill.data.energy = 1150
     fill.data.color = (0.45,0.72,1.0)
     fill.data.size = 6
     fill.rotation_euler = (math.radians(35),0,math.radians(125))
