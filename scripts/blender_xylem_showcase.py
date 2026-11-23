@@ -224,7 +224,9 @@ def main():
     canopy_centres = [(-1.0,5.3,0.85),(0,5.8,1.05),(1.0,5.25,0.82),(-.45,6.25,.72),(.55,6.35,.70)]
     for i, (x,z,s) in enumerate(canopy_centres):
         # Smaller foliage masses let the individual leaves and branch network define the silhouette.
-        uv("Canopy_Cluster", (x,0.15,z), (s*0.25,0.18,s*0.22), green if i%2 else green_light)
+        # Keep the old foliage mass only as a subtle depth layer; the leaf
+        # silhouettes and branching structure should define the crown.
+        uv("Canopy_Cluster", (x,0.15,z), (s*0.09,0.075,s*0.085), green if i%2 else green_light)
     branch_mat = material("Canopy_Branches", (0.19,0.075,0.032), 0.82)
     for i, (x,z,s) in enumerate(canopy_centres):
         start_x = -0.08 if x < 0 else 0.08
@@ -295,32 +297,33 @@ def main():
     for ci, (cx, cz, spread) in enumerate(canopy_centres):
         # Leaves sit along the outer twig network, with varied depth and angle
         # so the canopy reads as one branching crown instead of five round blobs.
-        for li in range(13):
-            angle = (li / 13.0) * math.tau + ci * 0.61 + 0.13 * math.sin(li * 2.1 + ci)
-            # Broader, irregular distribution lets adjacent leaf groups merge into
-            # a continuous crown while preserving visible gaps between twigs.
-            radial = 0.48 + 0.28 * ((li * 7 + ci * 3) % 5) / 4.0
+        for li in range(17):
+            angle = (li / 17.0) * math.tau + ci * 0.61 + 0.19 * math.sin(li * 2.1 + ci)
+            # A wider, deliberately uneven crown silhouette; neighboring groups
+            # overlap at their edges without forming five round foliage balls.
+            radial = 0.34 + 0.58 * ((li * 7 + ci * 3) % 7) / 6.0
             center = (cx + math.cos(angle) * spread * radial,
                       -0.34 + 0.16 * math.sin(li * 1.7 + ci),
                       cz + math.sin(angle) * spread * radial * 0.72)
             direction = (math.cos(angle + 0.45),
                          0.18 * math.sin(li * 1.1 + ci),
                          0.34 + 0.42 * math.sin(angle))
-            leaf_length = 0.39 + (li % 3) * 0.045
+            leaf_length = 0.43 + (li % 4) * 0.045
             leaf_direction = Vector(direction).normalized()
             leaf_base = Vector(center) - leaf_direction * (leaf_length * 0.43)
             # A fine, curved twig reaches each leaf base so blades visibly grow
             # from the branch network instead of appearing as detached shapes.
-            twig_anchor = Vector((cx + math.cos(angle) * spread * 0.12,
-                                  -0.18 + 0.025 * math.sin(li + ci),
-                                  cz + math.sin(angle) * spread * 0.10))
+            anchor_angle = angle - 0.22 * math.sin(li * 1.4 + ci)
+            twig_anchor = Vector((cx + math.cos(anchor_angle) * spread * 0.34,
+                                  -0.18 + 0.035 * math.sin(li + ci),
+                                  cz + math.sin(anchor_angle) * spread * 0.27))
             twig_mid = twig_anchor.lerp(leaf_base, 0.58)
             twig_mid.z += 0.035 * math.sin(angle * 2.0 + ci)
             curve_tube("Leaf_Attachment_Twig",
                        [tuple(twig_anchor), tuple(twig_mid), tuple(leaf_base)],
-                       0.0085, branch_mat, 8)
+                       0.010, branch_mat, 8)
             make_leaf("Canopy_Leaf", center, leaf_length,
-                      0.115 + (li % 2) * 0.018, direction,
+                      0.125 + (li % 3) * 0.014, direction,
                       green_light if (li + ci) % 5 == 0 else green)
 
     # Integrated trunk cutaway: a slim bark-framed window sits against the trunk,
@@ -444,19 +447,19 @@ def main():
     # their visible position around its axis.
     for i in range(12):
         pulse = uv("Directional_Flow_Pulse", (0,0,3.28),
-                   (0.020,0.075,0.020), water, 20, 12)
+                   (0.020,0.075,0.020), filament_mat, 20, 12)
         phase = i * 1.17
         # Pulses advance through the visible near section of the lumen while
         # gently changing radial position, creating readable forward travel.
         for frame, yy, turns in [(1,-0.15,0.0),(120,1.15,0.65),
                                  (240,2.65,1.35),(END,4.15,2.0)]:
             angle = phase + turns * math.tau
-            radius = 0.23
+            radius = 0.27
             pulse.location = (radius*math.cos(angle), yy,
                               3.28 + radius*math.sin(angle))
             pulse.keyframe_insert(data_path="location", frame=frame)
             pulse_size = 1.0 + 0.38 * math.sin(angle + i)
-            pulse.scale = (0.034*pulse_size,0.13*pulse_size,0.034*pulse_size)
+            pulse.scale = (0.040*pulse_size,0.145*pulse_size,0.040*pulse_size)
             pulse.keyframe_insert(data_path="scale", frame=frame)
 
     # V12: a layered stream of larger beads plus fine moving micro-droplets.
