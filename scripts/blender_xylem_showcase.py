@@ -371,18 +371,23 @@ def main():
     apply_mat(bpy.context.object, wood)
     bpy.context.object.name = "Open_Xylem_Entrance_Lip"
 
-    # Five slim xylem channels converge toward the open vessel mouth.
+    # V29: keep the circular vessel entrance unobstructed. The vertical
+    # xylem channels stop below the mouth and resume above it, leaving a
+    # clear sightline through the Boolean opening into the internal lumen.
     for i,x in enumerate([-0.21,-0.105,0.0,0.105,0.21]):
-        curve_tube("Embedded_Xylem_Channel",
-                   [(x,-0.606,2.18),(x*0.98,-0.610,2.62),
-                    (x*0.94,-0.610,3.10),(x*0.90,-0.605,3.88)],
+        curve_tube("Embedded_Xylem_Channel_Lower",
+                   [(x,-0.606,2.18),(x*0.98,-0.610,2.42),
+                    (x*0.94,-0.610,2.70)],
+                   0.018, xylem_mat)
+        curve_tube("Embedded_Xylem_Channel_Upper",
+                   [(x*0.94,-0.610,3.78),(x*0.90,-0.605,3.88)],
                    0.018, xylem_mat)
         if i in (1,2,3):
             flow_drop = uv("Ascending_Water_Streak",
                            (x,-0.635,2.45), (0.012,0.014,0.075),
                            water, 20, 12)
-            for frame,z in [(1,2.20),(90,2.85),(180,3.42),(270,3.80),(END,4.05)]:
-                flow_drop.location.z = z + (i-2)*0.06
+            for frame,z in [(1,2.20),(90,2.38),(180,2.55),(270,2.68),(END,2.68)]:
+                flow_drop.location.z = z + (i-2)*0.025
                 flow_drop.keyframe_insert(data_path="location", frame=frame)
     # The central channel continues directly through the entrance and into
     # the lumen, making the transition visually continuous.
