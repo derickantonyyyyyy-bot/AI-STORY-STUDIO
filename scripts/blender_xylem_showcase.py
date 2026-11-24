@@ -609,12 +609,14 @@ def main():
                 "Travelling_Water_Flow_Streak",
                 "Vertical_Wood_Grain",
                 "Organic_Bark_Cutaway_Edge",
-                "Exposed_Vertical_Trunk_Wood"
+                "Exposed_Vertical_Trunk_Wood",
+                "Tree_Trunk",
+                "Bark_Ridge"
             )):
                 obj.hide_render = True
         scene.frame_start = 275
         scene.frame_end = END
-        print("V35 diagnostic: hidden flow objects, vertical wood grain, and both foreground cutaway shells; rendering frames 275-360.")
+        print("V36 diagnostic: hidden flow objects, wood grain, both cutaway shells, main trunk, and bark ridges; rendering frames 275-360.")
 
     bpy.ops.render.render(animation=True)
     print("Xylem showcase rendered:", output)
