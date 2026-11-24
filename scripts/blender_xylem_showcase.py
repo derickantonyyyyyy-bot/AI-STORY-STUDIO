@@ -16,9 +16,11 @@ FPS = 30
 DURATION = 12
 END = FPS * DURATION
 
-def output_arg():
+def output_args():
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
-    return os.path.abspath(args[0] if args else "out/xylem-showcase.mp4")
+    output = os.path.abspath(args[0] if args else "out/xylem-showcase.mp4")
+    diagnostic = len(args) > 1 and args[1].lower() == "diagnostic"
+    return output, diagnostic
 
 def material(name, color, roughness=0.65, metallic=0.0, subsurface=0.0):
     m = bpy.data.materials.new(name)
@@ -124,7 +126,7 @@ def animate_scale(obj, frame, scale):
     obj.keyframe_insert(data_path="scale", frame=frame)
 
 def main():
-    output = output_arg()
+    output, diagnostic_mode = output_args()
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
     scene = bpy.context.scene
@@ -595,6 +597,22 @@ def main():
     scene.camera.data.dof.aperture_fstop = 16.0
     scene.render.filepath = output
     os.makedirs(os.path.dirname(output), exist_ok=True)
+
+    # V33 diagnostic mode: isolate the vessel geometry by hiding only the
+    # helical water filaments and travelling streaks. Render the final macro
+    # camera segment so any remaining bars can be traced to the vessel wall,
+    # entrance lip, or another non-flow object.
+    if diagnostic_mode:
+        for obj in bpy.data.objects:
+            if obj.name.startswith((
+                "Helical_Water_Flow_Filament",
+                "Travelling_Water_Flow_Streak"
+            )):
+                obj.hide_render = True
+        scene.frame_start = 275
+        scene.frame_end = END
+        print("V33 diagnostic: hidden helical filaments and travelling streaks; rendering frames 275-360.")
+
     bpy.ops.render.render(animation=True)
     print("Xylem showcase rendered:", output)
 
