@@ -19,8 +19,8 @@ END = FPS * DURATION
 def output_args():
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     output = os.path.abspath(args[0] if args else "out/xylem-showcase.mp4")
-    diagnostic = len(args) > 1 and args[1].lower() == "diagnostic"
-    return output, diagnostic
+    diagnostic_mode = args[1].lower() if len(args) > 1 else ""
+    return output, diagnostic_mode
 
 def material(name, color, roughness=0.65, metallic=0.0, subsurface=0.0):
     m = bpy.data.materials.new(name)
@@ -598,25 +598,31 @@ def main():
     scene.render.filepath = output
     os.makedirs(os.path.dirname(output), exist_ok=True)
 
-    # V34 diagnostic mode: isolate the vessel geometry by hiding the
-    # helical flow filaments, travelling streaks, and vertical wood-grain
-    # strips. The V33 render showed bars remained after flow objects vanished;
-    # this second pass tests whether the foreground grain is responsible.
-    if diagnostic_mode:
+    # Diagnostic modes isolate the two foreground cutaway shells separately.
+    # "diagnostic" hides both shells; "frame" hides only the bark cutaway edge;
+    # "wood" hides only the exposed trunk-wood shell. Shared clutter is hidden
+    # in all three modes so the remaining shell can be judged clearly.
+    if diagnostic_mode in ("diagnostic", "frame", "wood"):
+        hidden_prefixes = [
+            "Helical_Water_Flow_Filament",
+            "Travelling_Water_Flow_Streak",
+            "Vertical_Wood_Grain",
+            "Tree_Trunk",
+            "Bark_Ridge",
+        ]
+        if diagnostic_mode in ("diagnostic", "frame"):
+            hidden_prefixes.append("Organic_Bark_Cutaway_Edge")
+        if diagnostic_mode in ("diagnostic", "wood"):
+            hidden_prefixes.append("Exposed_Vertical_Trunk_Wood")
         for obj in bpy.data.objects:
-            if obj.name.startswith((
-                "Helical_Water_Flow_Filament",
-                "Travelling_Water_Flow_Streak",
-                "Vertical_Wood_Grain",
-                "Organic_Bark_Cutaway_Edge",
-                "Exposed_Vertical_Trunk_Wood",
-                "Tree_Trunk",
-                "Bark_Ridge"
-            )):
+            if obj.name.startswith(tuple(hidden_prefixes)):
                 obj.hide_render = True
         scene.frame_start = 275
         scene.frame_end = END
-        print("V36 diagnostic: hidden flow objects, wood grain, both cutaway shells, main trunk, and bark ridges; rendering frames 275-360.")
+        print(
+            f"Xylem {diagnostic_mode} diagnostic: hidden {', '.join(hidden_prefixes)}; "
+            "rendering frames 275-360."
+        )
 
     bpy.ops.render.render(animation=True)
     print("Xylem showcase rendered:", output)
