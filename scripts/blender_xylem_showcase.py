@@ -373,11 +373,19 @@ def main():
         bpy.context.view_layer.objects.active = shell
         bpy.ops.object.modifier_apply(modifier=passage.name)
     bpy.data.objects.remove(cutaway_cutter, do_unlink=True)
+    # V31: the foreground wood-grain strips still cross the vessel mouth.
+    # Keep the grain above and below the opening, but leave a clean aperture
+    # through the central cutaway so no decorative strips sit in the sightline.
     for i in range(9):
         x = -0.24 + i * 0.060
-        curve_tube("Vertical_Wood_Grain",
-                   [(x,-0.595,2.35),(x*0.98,-0.598,2.78),
-                    (x*0.94,-0.598,3.32),(x*0.90,-0.59,3.76)],
+        upper_x = x * 0.90
+        lower_x = x * 0.98
+        curve_tube("Vertical_Wood_Grain_Lower",
+                   [(x,-0.595,2.35),(lower_x,-0.598,2.70),
+                    (x*0.96,-0.598,2.92)],
+                   0.007, ring_dark)
+        curve_tube("Vertical_Wood_Grain_Upper",
+                   [(x*0.94,-0.598,3.64),(upper_x,-0.59,3.76)],
                    0.007, ring_dark)
 
     # V23: leave the vessel mouth genuinely open. A thin annular bark/wood
