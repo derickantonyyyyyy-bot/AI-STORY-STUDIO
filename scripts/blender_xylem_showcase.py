@@ -598,22 +598,25 @@ def main():
     scene.render.filepath = output
     os.makedirs(os.path.dirname(output), exist_ok=True)
 
-    # Diagnostic modes isolate the two foreground cutaway shells separately.
-    # "diagnostic" hides both shells; "frame" hides only the bark cutaway edge;
-    # "wood" hides only the exposed trunk-wood shell. Shared clutter is hidden
-    # in all three modes so the remaining shell can be judged clearly.
-    if diagnostic_mode in ("diagnostic", "frame", "wood"):
+    # Diagnostic modes isolate foreground shells, trunk, and bark ridges.
+    # "diagnostic" hides all candidates; "frame"/"wood" isolate the two shells.
+    # "trunk" hides the trunk but leaves bark ridges; "ridge" hides ridges but
+    # leaves the trunk. Other known clutter is hidden in each isolation pass.
+    if diagnostic_mode in ("diagnostic", "frame", "wood", "trunk", "ridge"):
         hidden_prefixes = [
             "Helical_Water_Flow_Filament",
             "Travelling_Water_Flow_Streak",
             "Vertical_Wood_Grain",
-            "Tree_Trunk",
-            "Bark_Ridge",
         ]
-        if diagnostic_mode in ("diagnostic", "frame"):
-            hidden_prefixes.append("Organic_Bark_Cutaway_Edge")
-        if diagnostic_mode in ("diagnostic", "wood"):
-            hidden_prefixes.append("Exposed_Vertical_Trunk_Wood")
+        if diagnostic_mode in ("diagnostic", "frame", "wood", "trunk", "ridge"):
+            hidden_prefixes.extend([
+                "Organic_Bark_Cutaway_Edge",
+                "Exposed_Vertical_Trunk_Wood",
+            ])
+        if diagnostic_mode in ("diagnostic", "frame", "wood", "trunk"):
+            hidden_prefixes.append("Tree_Trunk")
+        if diagnostic_mode in ("diagnostic", "frame", "wood", "ridge"):
+            hidden_prefixes.append("Bark_Ridge")
         for obj in bpy.data.objects:
             if obj.name.startswith(tuple(hidden_prefixes)):
                 obj.hide_render = True
