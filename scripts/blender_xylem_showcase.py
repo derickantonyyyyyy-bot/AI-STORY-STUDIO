@@ -598,21 +598,30 @@ def main():
     scene.render.filepath = output
     os.makedirs(os.path.dirname(output), exist_ok=True)
 
-    # Diagnostic modes isolate foreground shells, trunk, and bark ridges.
-    # "diagnostic" hides all candidates; "frame"/"wood" isolate the two shells.
-    # "trunk" hides the trunk but leaves bark ridges; "ridge" hides ridges but
-    # leaves the trunk. Other known clutter is hidden in each isolation pass.
-    if diagnostic_mode in ("diagnostic", "frame", "wood", "trunk", "ridge"):
+    # Clean one-variable diagnostics: hide only the named candidate so every
+    # other object remains in the scene. This avoids confounding the V37 tests.
+    if diagnostic_mode in ("noridge", "notrunk"):
+        target_prefix = "Bark_Ridge" if diagnostic_mode == "noridge" else "Tree_Trunk"
+        for obj in bpy.data.objects:
+            if obj.name.startswith(target_prefix):
+                obj.hide_render = True
+        scene.frame_start = 275
+        scene.frame_end = END
+        print(
+            f"Xylem {diagnostic_mode} diagnostic: hidden only {target_prefix}; "
+            "rendering frames 275-360."
+        )
+    elif diagnostic_mode in ("diagnostic", "frame", "wood", "trunk", "ridge"):
+        # Legacy isolation modes retained for reproducibility.
         hidden_prefixes = [
             "Helical_Water_Flow_Filament",
             "Travelling_Water_Flow_Streak",
             "Vertical_Wood_Grain",
         ]
-        if diagnostic_mode in ("diagnostic", "frame", "wood", "trunk", "ridge"):
-            hidden_prefixes.extend([
-                "Organic_Bark_Cutaway_Edge",
-                "Exposed_Vertical_Trunk_Wood",
-            ])
+        hidden_prefixes.extend([
+            "Organic_Bark_Cutaway_Edge",
+            "Exposed_Vertical_Trunk_Wood",
+        ])
         if diagnostic_mode in ("diagnostic", "frame", "wood", "trunk"):
             hidden_prefixes.append("Tree_Trunk")
         if diagnostic_mode in ("diagnostic", "frame", "wood", "ridge"):
@@ -623,7 +632,7 @@ def main():
         scene.frame_start = 275
         scene.frame_end = END
         print(
-            f"Xylem {diagnostic_mode} diagnostic: hidden {', '.join(hidden_prefixes)}; "
+            f"Xylem {diagnostic_mode} legacy diagnostic: hidden {', '.join(hidden_prefixes)}; "
             "rendering frames 275-360."
         )
 
