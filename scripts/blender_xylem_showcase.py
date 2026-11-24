@@ -464,15 +464,9 @@ def main():
         )
         apply_mat(bpy.context.object, tunnel_ring_mat)
         bpy.context.object.name = "Subtle_Vessel_Wall_Ridge"
-    # Four longitudinal fibres define the inside of the vessel.
-    for angle in [0, math.pi/2, math.pi, 3*math.pi/2]:
-        x = math.cos(angle) * tunnel_radius
-        z = 3.28 + math.sin(angle) * tunnel_radius
-        curve_tube(
-            "Longitudinal_Vessel_Fibre",
-            [(x, tunnel_y_start + n*(tunnel_y_end-tunnel_y_start)/5, z) for n in range(6)],
-            0.018, tunnel_fibre_mat
-        )
+    # V32: remove the four high-contrast longitudinal ribs from the
+    # camera-facing vessel interior. They read as bars across the lumen.
+    # Keep the wall and subtle annular ridges to communicate tunnel depth.
     # One continuous central stream carries the viewer's eye into the lumen.
     flow_mat = emissive("Xylem_Flow_Glow", (0.025, 0.42, 0.82), 1.05)
     curve_tube("Central_Water_Flow", [(0, tunnel_y_start+0.1, 3.28),
