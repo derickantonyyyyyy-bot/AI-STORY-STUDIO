@@ -354,6 +354,25 @@ def main():
                         (0.39,0.060,1.02), bark, 48, 32)
     cutaway_wood = uv("Exposed_Vertical_Trunk_Wood", (0,-0.548,3.05),
                       (0.315,0.040,0.94), wood, 48, 32)
+
+    # V30: the trunk's Boolean opening alone is not enough: these two
+    # foreground cutaway shells also cover the vessel from the camera side.
+    # Carve the same continuous passage through both shells so the camera
+    # sees the actual open-ended lumen rather than a wood face behind its lip.
+    bpy.ops.mesh.primitive_cylinder_add(
+        vertices=96, radius=0.305, depth=1.80,
+        location=(0,-0.02,3.28), rotation=(math.radians(90),0,0)
+    )
+    cutaway_cutter = bpy.context.object
+    cutaway_cutter.name = "Temporary_Cutaway_Passage_Cutter"
+    for shell in (cutaway_frame, cutaway_wood):
+        passage = shell.modifiers.new("Open_Vessel_Passage", "BOOLEAN")
+        passage.operation = "DIFFERENCE"
+        passage.solver = "EXACT"
+        passage.object = cutaway_cutter
+        bpy.context.view_layer.objects.active = shell
+        bpy.ops.object.modifier_apply(modifier=passage.name)
+    bpy.data.objects.remove(cutaway_cutter, do_unlink=True)
     for i in range(9):
         x = -0.24 + i * 0.060
         curve_tube("Vertical_Wood_Grain",
