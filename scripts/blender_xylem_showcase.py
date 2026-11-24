@@ -523,11 +523,8 @@ def main():
     # V27: keep the camera outside the trunk and look through the real
     # Boolean-carved entrance along the vessel axis. A wider macro lens keeps
     # the complete mouth in frame while preserving the tunnel depth.
-    key_location(camera, 275, (0,-1.55,3.28))
-    key_location(camera, END, (0,-1.55,3.28))
-    for frame, lens in [(1,48),(210,48),(275,32),(END,32)]:
-        camera.data.lens = lens
-        camera.data.keyframe_insert(data_path="lens", frame=frame)
+    key_location(camera, 275, (0,-2.00,3.28))
+    key_location(camera, END, (0,-2.00,3.28))
     for frame, loc in [
         (1,(0,0.0,2.45)),
         (105,(0,-0.12,2.72)),
@@ -537,7 +534,10 @@ def main():
     ]:
         target.location = loc
         target.keyframe_insert(data_path="location", frame=frame)
-    for frame,lens in [(1,48),(105,40),(210,48),(275,48),(END,48)]:
+    # V28: the later lens keyframes are the active ones in Blender. Keep
+    # the establishing/approach framing, then use a genuinely wider macro
+    # lens for the final view through the vessel entrance.
+    for frame,lens in [(1,48),(105,40),(210,48),(275,28),(END,28)]:
         camera.data.lens = lens
         camera.data.keyframe_insert(data_path="lens", frame=frame)
 
