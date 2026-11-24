@@ -536,6 +536,36 @@ def main():
             streak.keyframe_insert(data_path="location", frame=frame)
             streak.keyframe_insert(data_path="rotation_euler", frame=frame)
 
+    # V41: add clearly readable travelling water pulses. The old central glow
+    # and filaments describe the channel but can look static in a paused frame.
+    # These elongated droplets move down the vessel axis with staggered spacing.
+    pulse_mat = emissive("Water_Travel_Pulse_Glow", (0.035, 0.58, 1.0), 1.8)
+    pulse_count = 9
+    pulse_start_frame = 150
+    pulse_end_frame = END
+    pulse_travel = 8.0
+    for i in range(pulse_count):
+        pulse = uv(
+            "Water_Travel_Pulse",
+            (0.0, tunnel_y_start, 3.28),
+            (0.052, 0.17, 0.052),
+            pulse_mat, 24, 16
+        )
+        phase = i * 0.73
+        start_y = -1.05 - i * 0.92
+        end_y = start_y + pulse_travel
+        for frame, yy in (
+            (pulse_start_frame, start_y),
+            (pulse_end_frame, end_y),
+        ):
+            angle = phase + (frame - pulse_start_frame) * 0.018
+            pulse.location = (
+                0.105 * math.cos(angle),
+                yy,
+                3.28 + 0.105 * math.sin(angle)
+            )
+            pulse.keyframe_insert(data_path="location", frame=frame)
+
     # No floating 3D labels: clean, synchronized captions will be composited later.
 
     # V6 camera journey: preserve the V5 establishing shot and trunk approach,
