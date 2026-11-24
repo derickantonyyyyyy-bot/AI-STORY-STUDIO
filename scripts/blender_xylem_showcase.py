@@ -222,7 +222,21 @@ def main():
     bpy.data.objects.remove(trunk_cutter, do_unlink=True)
     for i in range(9):
         x = -0.38 + i * 0.095
-        curve_tube("Bark_Ridge", [(x, -0.47, 0.0), (x*0.9, -0.49, 1.4), (x*0.75, -0.45, 3.1), (x*0.7, -0.36, 5.0)], 0.018, root_mat)
+        # Keep bark ridges above and below the camera-facing xylem aperture.
+        # The original continuous curves crossed the vessel mouth and appeared
+        # as vertical wooden bars. Split each ridge around a generous clear zone.
+        lower_end = (x*0.781, -0.458, 2.75)
+        upper_start = (x*0.731, -0.416, 3.82)
+        curve_tube(
+            "Bark_Ridge_Lower",
+            [(x, -0.47, 0.0), (x*0.9, -0.49, 1.4), lower_end],
+            0.018, root_mat
+        )
+        curve_tube(
+            "Bark_Ridge_Upper",
+            [upper_start, (x*0.7, -0.36, 5.0)],
+            0.018, root_mat
+        )
 
     # Root network fans out across the visible front of the soil.
     root_paths = [
