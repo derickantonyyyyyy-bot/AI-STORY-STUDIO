@@ -598,20 +598,21 @@ def main():
     scene.render.filepath = output
     os.makedirs(os.path.dirname(output), exist_ok=True)
 
-    # V33 diagnostic mode: isolate the vessel geometry by hiding only the
-    # helical water filaments and travelling streaks. Render the final macro
-    # camera segment so any remaining bars can be traced to the vessel wall,
-    # entrance lip, or another non-flow object.
+    # V34 diagnostic mode: isolate the vessel geometry by hiding the
+    # helical flow filaments, travelling streaks, and vertical wood-grain
+    # strips. The V33 render showed bars remained after flow objects vanished;
+    # this second pass tests whether the foreground grain is responsible.
     if diagnostic_mode:
         for obj in bpy.data.objects:
             if obj.name.startswith((
                 "Helical_Water_Flow_Filament",
-                "Travelling_Water_Flow_Streak"
+                "Travelling_Water_Flow_Streak",
+                "Vertical_Wood_Grain"
             )):
                 obj.hide_render = True
         scene.frame_start = 275
         scene.frame_end = END
-        print("V33 diagnostic: hidden helical filaments and travelling streaks; rendering frames 275-360.")
+        print("V34 diagnostic: hidden flow filaments, travelling streaks, and vertical wood grain; rendering frames 275-360.")
 
     bpy.ops.render.render(animation=True)
     print("Xylem showcase rendered:", output)
