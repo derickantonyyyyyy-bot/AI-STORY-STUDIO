@@ -589,68 +589,133 @@ def main():
             )
             particle.keyframe_insert(data_path="location", frame=frame)
 
-    # V52: a vertical open-sided xylem cutaway aligned with the tree trunk.
-    # The camera stays on the original front axis; world Z is the flow direction.
-    side_wall_mat = material("Vertical_Xylem_Back_Panel", (0.025, 0.15, 0.18), 0.58)
-    side_edge_mat = material("Vertical_Xylem_Cut_Edges", (0.12, 0.43, 0.46), 0.35)
-    side_water_mat = emissive("Vertical_Xylem_Water_Stream", (0.012, 0.48, 0.98), 2.0)
+    # V54: replace the circular vessel mouth with a front-facing vertical wood cutaway.
+    # The cutaway is layered directly in front of the trunk: wood cheeks frame
+    # a recessed teal channel, while a bright stream and separate droplets rise
+    # along world Z. This keeps the educational flow readable in portrait view.
+    cutaway_wood_mat = material("V54_Exposed_Cutaway_Wood", (0.72, 0.47, 0.24), 0.62)
+    cutaway_grain_mat = material("V54_Wood_Grain", (0.43, 0.25, 0.12), 0.78)
+    channel_back_mat = material("V54_Recessed_Xylem_Channel", (0.018, 0.105, 0.14), 0.48)
+    channel_edge_mat = material("V54_Channel_Edge", (0.20, 0.52, 0.49), 0.38)
+    side_water_mat = emissive("V54_Upward_Water", (0.025, 0.58, 1.0), 2.4)
 
-    z_bottom, z_top = 2.72, 4.62
-    panel_verts = [
-        (-0.245, 0.12, z_bottom), (0.245, 0.12, z_bottom),
-        (0.245, 0.12, z_top), (-0.245, 0.12, z_top)
-    ]
-    panel_mesh = bpy.data.meshes.new("Vertical_Xylem_Back_Panel_Mesh")
-    panel_mesh.from_pydata(panel_verts, [], [(0,1,2,3)])
-    panel_mesh.materials.append(side_wall_mat)
-    panel = bpy.data.objects.new("Vertical_Xylem_Back_Panel", panel_mesh)
-    bpy.context.collection.objects.link(panel)
-    panel.hide_render = True
-    panel.keyframe_insert(data_path="hide_render", frame=274)
-    panel.hide_render = False
-    panel.keyframe_insert(data_path="hide_render", frame=275)
+    v54_bottom, v54_top = 2.70, 4.64
+    v54_mid = (v54_bottom + v54_top) * 0.5
 
-    # Two vertical cut edges frame the open channel without enclosing it.
-    for x in (-0.245, 0.245):
-        rail = curve_tube("Vertical_Xylem_Cut_Edge",
-            [(x, -0.04, z_bottom), (x, -0.04, 3.25),
-             (x, -0.04, 3.85), (x, -0.04, z_top)],
-            0.038, side_edge_mat, 10)
-        rail.hide_render = True
-        rail.keyframe_insert(data_path="hide_render", frame=274)
-        rail.hide_render = False
-        rail.keyframe_insert(data_path="hide_render", frame=275)
+    # A shallow wood slab sits just proud of the trunk, replacing the old
+    # circular lip in the macro view with a clearly longitudinal section.
+    bpy.ops.mesh.primitive_cube_add(size=1, location=(0.0, -0.615, v54_mid))
+    wood_slab = bpy.context.object
+    wood_slab.name = "V54_Front_Cutaway_Wood_Slab"
+    wood_slab.dimensions = (0.88, 0.105, 2.08)
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    apply_mat(wood_slab, cutaway_wood_mat)
+    slab_bevel = wood_slab.modifiers.new("V54_Soft_Wood_Edges", "BEVEL")
+    slab_bevel.width = 0.075
+    slab_bevel.segments = 5
+    wood_slab.modifiers.new("V54_Wood_Normals", "WEIGHTED_NORMAL")
 
-    # Water moves vertically upward through the centre of the open channel.
-    side_stream = curve_tube("Vertical_Visible_Water_Stream",
-        [(0.0, -0.12, z_bottom+0.08), (0.0, -0.12, 3.25),
-         (0.0, -0.12, 3.82), (0.0, -0.12, z_top-0.08)],
-        0.052, side_water_mat, 16)
-    side_stream.hide_render = True
-    side_stream.keyframe_insert(data_path="hide_render", frame=274)
-    side_stream.hide_render = False
-    side_stream.keyframe_insert(data_path="hide_render", frame=275)
+    # Recessed open channel: no enclosing tube and no circular entrance.
+    bpy.ops.mesh.primitive_cube_add(size=1, location=(0.0, -0.681, v54_mid))
+    channel_back = bpy.context.object
+    channel_back.name = "V54_Open_Xylem_Channel_Back"
+    channel_back.dimensions = (0.315, 0.025, 1.82)
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    apply_mat(channel_back, channel_back_mat)
+    back_bevel = channel_back.modifiers.new("V54_Channel_Soft_Edges", "BEVEL")
+    back_bevel.width = 0.035
+    back_bevel.segments = 4
 
-    # Nine distinct droplets travel upward along world Z.
-    for i in range(9):
-        drop = uv("Vertical_Xylem_Water_Droplet", (0.0, -0.17, 2.85),
-                  (0.042, 0.042, 0.095), side_water_mat, 24, 16)
-        drop.hide_render = True
-        drop.keyframe_insert(data_path="hide_render", frame=274)
-        drop.hide_render = False
-        drop.keyframe_insert(data_path="hide_render", frame=275)
-        z0 = 2.82 + i * 0.19
-        for frame, zz in ((275, z0), (END, min(z0 + 0.72, z_top-0.12))):
-            drop.location = (0.0, -0.17, zz)
+    # Raised wood cheeks and slim teal cut edges give the channel depth.
+    for side in (-1, 1):
+        bpy.ops.mesh.primitive_cube_add(
+            size=1, location=(side * 0.265, -0.735, v54_mid)
+        )
+        cheek = bpy.context.object
+        cheek.name = "V54_Wood_Cutaway_Cheek"
+        cheek.dimensions = (0.19, 0.13, 1.98)
+        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+        apply_mat(cheek, cutaway_wood_mat)
+        bevel = cheek.modifiers.new("V54_Cheek_Rounded_Edges", "BEVEL")
+        bevel.width = 0.045
+        bevel.segments = 4
+        cheek.modifiers.new("V54_Cheek_Normals", "WEIGHTED_NORMAL")
+
+        edge = curve_tube(
+            "V54_Vertical_Channel_Edge",
+            [(side * 0.158, -0.765, v54_bottom + 0.12),
+             (side * 0.158, -0.765, v54_mid),
+             (side * 0.158, -0.765, v54_top - 0.12)],
+            0.018, channel_edge_mat, 10
+        )
+
+    # A few fine grain lines stop short of the channel, reinforcing the wood
+    # cross-section without drawing bars across the moving water.
+    for x in (-0.36, -0.30, 0.30, 0.36):
+        curve_tube(
+            "V54_Cutaway_Wood_Grain",
+            [(x, -0.678, 2.82), (x * 0.98, -0.682, 3.18),
+             (x * 0.96, -0.682, 3.48)],
+            0.006, cutaway_grain_mat, 8
+        )
+        curve_tube(
+            "V54_Cutaway_Wood_Grain",
+            [(x * 0.96, -0.682, 3.88), (x * 0.98, -0.682, 4.18),
+             (x, -0.678, 4.50)],
+            0.006, cutaway_grain_mat, 8
+        )
+
+    # The stream and individual droplets travel upward through the exposed
+    # channel, with staggered motion so the direction is immediately legible.
+    stream = curve_tube(
+        "V54_Continuous_Upward_Water_Stream",
+        [(0.0, -0.785, v54_bottom + 0.10),
+         (0.0, -0.785, 3.22),
+         (0.0, -0.785, 3.78),
+         (0.0, -0.785, v54_top - 0.10)],
+        0.035, side_water_mat, 12
+    )
+    for i in range(8):
+        drop = uv(
+            "V54_Ascending_Water_Droplet",
+            (0.0, -0.825, 2.82),
+            (0.030, 0.028, 0.072),
+            side_water_mat, 24, 16
+        )
+        x_offset = (-0.045, 0.0, 0.045)[i % 3]
+        z0 = 2.84 + i * 0.17
+        for frame, zz in ((275, z0), (END, min(z0 + 0.82, v54_top - 0.13))):
+            drop.location = (x_offset, -0.825, zz)
             drop.keyframe_insert(data_path="location", frame=frame)
 
-    # Hide the old head-on tunnel assembly when the longitudinal cutaway appears.
+    # All V54 cutaway elements appear together at the final macro reveal.
+    v54_prefixes = (
+        "V54_Front_Cutaway_Wood_Slab", "V54_Open_Xylem_Channel_Back",
+        "V54_Wood_Cutaway_Cheek", "V54_Vertical_Channel_Edge",
+        "V54_Cutaway_Wood_Grain", "V54_Continuous_Upward_Water_Stream",
+        "V54_Ascending_Water_Droplet"
+    )
     for obj in list(bpy.data.objects):
-        if obj.name == "Continuous_Vessel_Inner_Wall" or obj.name.startswith((
-            "Longitudinal_Vessel_Wall_Seam", "Central_Water_Flow",
-            "Helical_Water_Flow_Filament", "Travelling_Water_Flow_Streak",
-            "Water_Travel_Pulse", "Water_Travel_Micro_Particle"
-        )):
+        if obj.name.startswith(v54_prefixes):
+            obj.hide_render = True
+            obj.keyframe_insert(data_path="hide_render", frame=274)
+            obj.hide_render = False
+            obj.keyframe_insert(data_path="hide_render", frame=275)
+
+    # Hide every legacy circular-mouth component for the final shot. The
+    # circular lip, oval shells, old channel connectors and tunnel must not
+    # remain visible behind or in front of the new rectangular cutaway.
+    legacy_final_hide = (
+        "Organic_Bark_Cutaway_Edge", "Exposed_Vertical_Trunk_Wood",
+        "Open_Xylem_Entrance_Lip", "Embedded_Xylem_Channel",
+        "Ascending_Water_Streak", "Xylem_To_Vessel_Connector",
+        "Continuous_Vessel_Inner_Wall", "Longitudinal_Vessel_Wall_Seam",
+        "Central_Water_Flow", "Helical_Water_Flow_Filament",
+        "Travelling_Water_Flow_Streak", "Water_Travel_Pulse",
+        "Water_Travel_Micro_Particle"
+    )
+    for obj in list(bpy.data.objects):
+        if obj.name.startswith(legacy_final_hide):
             obj.hide_render = False
             obj.keyframe_insert(data_path="hide_render", frame=274)
             obj.hide_render = True
