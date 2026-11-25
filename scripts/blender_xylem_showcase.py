@@ -581,9 +581,8 @@ def main():
     track = camera.constraints.new(type="TRACK_TO")
     track.target = target
     track.track_axis = "TRACK_NEGATIVE_Z"
-    # V44: use world Z as camera up; the vessel runs along world Y,
-    # so UP_Y becomes parallel to the viewing direction during the tunnel dive.
-    track.up_axis = "UP_Z"
+    # V45: restore the stable world-Y camera-up orientation from V42/V43.
+    track.up_axis = "UP_Y"
     scene.camera = camera
 
     # A gradual, continuous dolly-in; the final target sits on the actual
@@ -594,25 +593,24 @@ def main():
     # V24: keep the camera just outside the solid trunk, aligned with the
     # open vessel mouth. The trunk is a solid mesh, so moving through its
     # volume would occlude the view; looking through the mouth reveals the lumen.
-    # V43: begin outside the trunk, then dolly forward through the open
-    # xylem entrance and into the vessel lumen. The camera stays on the vessel
-    # axis; its target advances ahead to reveal the tunnel rather than a flat mouth.
+    # V45: hold the camera outside the trunk for the entire macro section.
+    # This preserves the proven entrance framing while we test orientation alone.
     key_location(camera, 275, (0,-2.00,3.28))
-    key_location(camera, END, (0,0.55,3.28))
+    key_location(camera, END, (0,-2.00,3.28))
     for frame, loc in [
         (1,(0,0.0,2.45)),
         (105,(0,-0.12,2.72)),
         (210,(0,-0.55,3.05)),
         (275,(0,3.25,3.28)),
-        (END,(0,2.20,3.28))
+        (END,(0,4.10,3.28))
     ]:
         target.location = loc
         target.keyframe_insert(data_path="location", frame=frame)
     # V28: the later lens keyframes are the active ones in Blender. Keep
     # the establishing/approach framing, then use a genuinely wider macro
     # lens for the final view through the vessel entrance.
-    # Tighten the macro framing as the camera enters the vessel lumen.
-    for frame,lens in [(1,48),(105,40),(210,48),(275,28),(END,50)]:
+    # Keep the wider V42 macro lens while the camera remains outside the entrance.
+    for frame,lens in [(1,48),(105,40),(210,48),(275,28),(END,28)]:
         camera.data.lens = lens
         camera.data.keyframe_insert(data_path="lens", frame=frame)
 
