@@ -589,57 +589,59 @@ def main():
             )
             particle.keyframe_insert(data_path="location", frame=frame)
 
-    # V49: a true longitudinal side cutaway, revealed only for the final shot.
-    # The near half of the vessel is removed so the viewer can see the lumen.
-    side_wall_mat = material("Longitudinal_Cutaway_Wall", (0.10, 0.31, 0.34), 0.48)
-    side_water_mat = emissive("Longitudinal_Water_Stream", (0.025, 0.52, 0.95), 1.65)
-    side_verts = []
-    side_faces = []
-    side_steps = 64
-    side_rings = 24
-    for yi in range(side_rings + 1):
-        yy = 0.0 + (7.75 * yi / side_rings)
-        for ai in range(side_steps + 1):
-            angle = math.pi/2 + math.pi * ai / side_steps
-            rr = tunnel_radius - 0.018
-            side_verts.append((math.cos(angle) * rr, yy,
-                               3.28 + math.sin(angle) * rr))
-    for yi in range(side_rings):
-        for ai in range(side_steps):
-            p = yi * (side_steps + 1) + ai
-            side_faces.append((p, p+1, p+side_steps+2, p+side_steps+1))
-    side_mesh = bpy.data.meshes.new("Longitudinal_Xylem_Cutaway_Mesh")
-    side_mesh.from_pydata(side_verts, [], side_faces)
-    side_mesh.materials.append(side_wall_mat)
-    side_wall = bpy.data.objects.new("Longitudinal_Xylem_Cutaway_Wall", side_mesh)
-    bpy.context.collection.objects.link(side_wall)
-    for poly in side_mesh.polygons:
-        poly.use_smooth = True
-    side_wall.hide_render = True
-    side_wall.keyframe_insert(data_path="hide_render", frame=274)
-    side_wall.hide_render = False
-    side_wall.keyframe_insert(data_path="hide_render", frame=275)
+    # V51: replace the curved tube with a simple, open-sided teaching cutaway.
+    # The camera looks across the open +X side; a flat back panel and two
+    # long edge rails frame the lumen without enclosing or obscuring it.
+    side_wall_mat = material("Open_Xylem_Cutaway_Wall", (0.035, 0.16, 0.19), 0.62)
+    side_edge_mat = material("Xylem_Cutaway_Edges", (0.12, 0.42, 0.44), 0.38)
+    side_water_mat = emissive("Longitudinal_Water_Stream", (0.015, 0.48, 0.98), 2.1)
 
-    # A continuous raised water ribbon and staggered droplets make upward
-    # transport readable in the side-on composition.
+    panel_verts = [
+        (-0.245, 0.0, 3.00), (-0.245, 7.75, 3.00),
+        (-0.245, 7.75, 3.56), (-0.245, 0.0, 3.56)
+    ]
+    panel_mesh = bpy.data.meshes.new("Open_Xylem_Back_Panel_Mesh")
+    panel_mesh.from_pydata(panel_verts, [], [(0,1,2,3)])
+    panel_mesh.materials.append(side_wall_mat)
+    panel = bpy.data.objects.new("Open_Xylem_Back_Panel", panel_mesh)
+    bpy.context.collection.objects.link(panel)
+    panel.hide_render = True
+    panel.keyframe_insert(data_path="hide_render", frame=274)
+    panel.hide_render = False
+    panel.keyframe_insert(data_path="hide_render", frame=275)
+
+    # Upper and lower cut edges give the vessel a readable longitudinal shape.
+    for z in (3.00, 3.56):
+        rail = curve_tube("Open_Xylem_Cutaway_Edge",
+            [(-0.12, 0.0, z), (-0.12, 1.9, z),
+             (-0.12, 3.9, z), (-0.12, 5.9, z),
+             (-0.12, 7.75, z)], 0.045, side_edge_mat, 10)
+        rail.hide_render = True
+        rail.keyframe_insert(data_path="hide_render", frame=274)
+        rail.hide_render = False
+        rail.keyframe_insert(data_path="hide_render", frame=275)
+
+    # A bright, continuous stream is placed in front of the dark back panel.
     side_stream = curve_tube("Longitudinal_Visible_Water_Stream",
-        [(0.0, 0.05, 3.28), (0.0, 1.8, 3.28),
-         (0.0, 3.8, 3.28), (0.0, 5.8, 3.28),
-         (0.0, 7.65, 3.28)], 0.034, side_water_mat, 12)
+        [(0.015, 0.05, 3.28), (0.015, 1.8, 3.28),
+         (0.015, 3.8, 3.28), (0.015, 5.8, 3.28),
+         (0.015, 7.65, 3.28)], 0.058, side_water_mat, 16)
     side_stream.hide_render = True
     side_stream.keyframe_insert(data_path="hide_render", frame=274)
     side_stream.hide_render = False
     side_stream.keyframe_insert(data_path="hide_render", frame=275)
-    for i in range(11):
-        drop = uv("Longitudinal_Water_Droplet", (0.0, 0.2, 3.28),
-                  (0.025, 0.11, 0.025), side_water_mat, 20, 12)
+
+    # Larger travelling droplets make upward movement legible at portrait scale.
+    for i in range(9):
+        drop = uv("Longitudinal_Water_Droplet", (0.06, 0.2, 3.28),
+                  (0.045, 0.13, 0.045), side_water_mat, 24, 16)
         drop.hide_render = True
         drop.keyframe_insert(data_path="hide_render", frame=274)
         drop.hide_render = False
         drop.keyframe_insert(data_path="hide_render", frame=275)
-        y0 = 0.25 + i * 0.66
-        for frame, yy in ((275, y0), (END, y0 + 1.65)):
-            drop.location = (0.0, yy, 3.28)
+        y0 = 0.30 + i * 0.86
+        for frame, yy in ((275, y0), (END, y0 + 1.45)):
+            drop.location = (0.06, yy, 3.28)
             drop.keyframe_insert(data_path="location", frame=frame)
 
     # Hide the old head-on tunnel assembly when the longitudinal cutaway appears.
@@ -707,14 +709,12 @@ def main():
     # the establishing/approach framing, then use a genuinely wider macro
     # lens for the final view through the vessel entrance.
     # Keep the wider V42 macro lens while the camera remains outside the entrance.
-    # Compute a stable side-view camera orientation at the cutaway reveal.
-    # Roll the camera 90 degrees so the vessel length (world Y) runs vertically.
+    # V51: no camera roll. World Y is the portrait-frame vertical axis,
+    # so the vessel reads as a tall longitudinal cutaway.
     from mathutils import Quaternion
     side_direction = Vector((0.0,3.65,3.28)) - Vector((3.35,3.65,3.28))
-    side_rotation = side_direction.to_track_quat("-Z", "Y")
-    side_roll = Quaternion((0.0,0.0,1.0), math.radians(90.0))
     camera.rotation_mode = "QUATERNION"
-    camera.rotation_quaternion = side_rotation @ side_roll
+    camera.rotation_quaternion = side_direction.to_track_quat("-Z", "Y")
     camera.keyframe_insert(data_path="rotation_quaternion", frame=275)
     camera.keyframe_insert(data_path="rotation_quaternion", frame=END)
 
