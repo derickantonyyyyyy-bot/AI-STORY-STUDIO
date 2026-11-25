@@ -589,6 +589,71 @@ def main():
             )
             particle.keyframe_insert(data_path="location", frame=frame)
 
+    # V49: a true longitudinal side cutaway, revealed only for the final shot.
+    # The near half of the vessel is removed so the viewer can see the lumen.
+    side_wall_mat = material("Longitudinal_Cutaway_Wall", (0.10, 0.31, 0.34), 0.48)
+    side_water_mat = emissive("Longitudinal_Water_Stream", (0.025, 0.52, 0.95), 1.65)
+    side_verts = []
+    side_faces = []
+    side_steps = 64
+    side_rings = 24
+    for yi in range(side_rings + 1):
+        yy = 0.0 + (7.75 * yi / side_rings)
+        for ai in range(side_steps + 1):
+            angle = -math.pi/2 + math.pi * ai / side_steps
+            rr = tunnel_radius - 0.018
+            side_verts.append((math.cos(angle) * rr, yy,
+                               3.28 + math.sin(angle) * rr))
+    for yi in range(side_rings):
+        for ai in range(side_steps):
+            p = yi * (side_steps + 1) + ai
+            side_faces.append((p, p+1, p+side_steps+2, p+side_steps+1))
+    side_mesh = bpy.data.meshes.new("Longitudinal_Xylem_Cutaway_Mesh")
+    side_mesh.from_pydata(side_verts, [], side_faces)
+    side_mesh.materials.append(side_wall_mat)
+    side_wall = bpy.data.objects.new("Longitudinal_Xylem_Cutaway_Wall", side_mesh)
+    bpy.context.collection.objects.link(side_wall)
+    for poly in side_mesh.polygons:
+        poly.use_smooth = True
+    side_wall.hide_render = True
+    side_wall.keyframe_insert(data_path="hide_render", frame=274)
+    side_wall.hide_render = False
+    side_wall.keyframe_insert(data_path="hide_render", frame=275)
+
+    # A continuous raised water ribbon and staggered droplets make upward
+    # transport readable in the side-on composition.
+    side_stream = curve_tube("Longitudinal_Visible_Water_Stream",
+        [(0.0, 0.05, 3.28), (0.0, 1.8, 3.28),
+         (0.0, 3.8, 3.28), (0.0, 5.8, 3.28),
+         (0.0, 7.65, 3.28)], 0.034, side_water_mat, 12)
+    side_stream.hide_render = True
+    side_stream.keyframe_insert(data_path="hide_render", frame=274)
+    side_stream.hide_render = False
+    side_stream.keyframe_insert(data_path="hide_render", frame=275)
+    for i in range(11):
+        drop = uv("Longitudinal_Water_Droplet", (0.0, 0.2, 3.28),
+                  (0.025, 0.11, 0.025), side_water_mat, 20, 12)
+        drop.hide_render = True
+        drop.keyframe_insert(data_path="hide_render", frame=274)
+        drop.hide_render = False
+        drop.keyframe_insert(data_path="hide_render", frame=275)
+        y0 = 0.25 + i * 0.66
+        for frame, yy in ((275, y0), (END, y0 + 1.65)):
+            drop.location = (0.0, yy, 3.28)
+            drop.keyframe_insert(data_path="location", frame=frame)
+
+    # Hide the old head-on tunnel assembly when the longitudinal cutaway appears.
+    for obj in list(bpy.data.objects):
+        if obj.name == "Continuous_Vessel_Inner_Wall" or obj.name.startswith((
+            "Longitudinal_Vessel_Wall_Seam", "Central_Water_Flow",
+            "Helical_Water_Flow_Filament", "Travelling_Water_Flow_Streak",
+            "Water_Travel_Pulse", "Water_Travel_Micro_Particle"
+        )):
+            obj.hide_render = False
+            obj.keyframe_insert(data_path="hide_render", frame=274)
+            obj.hide_render = True
+            obj.keyframe_insert(data_path="hide_render", frame=275)
+
     # No floating 3D labels: clean, synchronized captions will be composited later.
 
     # V6 camera journey: preserve the V5 establishing shot and trunk approach,
@@ -621,14 +686,14 @@ def main():
     # V47: a subtle off-axis view exposes the vessel's length instead of
     # presenting the entrance as a flat circular target. The camera ray still
     # passes through the centre of the bark aperture.
-    key_location(camera, 275, (-0.28,-2.00,3.28))
-    key_location(camera, END, (-0.28,-2.00,3.28))
+    key_location(camera, 275, (-3.35,3.65,3.28))
+    key_location(camera, END, (-3.35,3.65,3.28))
     for frame, loc in [
         (1,(0,0.0,2.45)),
         (105,(0,-0.12,2.72)),
         (210,(0,-0.55,3.05)),
-        (275,(0.35,3.25,3.28)),
-        (END,(0.75,4.10,3.28))
+        (275,(0.0,3.65,3.28)),
+        (END,(0.0,3.65,3.28))
     ]:
         target.location = loc
         target.keyframe_insert(data_path="location", frame=frame)
@@ -636,7 +701,7 @@ def main():
     # the establishing/approach framing, then use a genuinely wider macro
     # lens for the final view through the vessel entrance.
     # Keep the wider V42 macro lens while the camera remains outside the entrance.
-    for frame,lens in [(1,48),(105,40),(210,48),(275,38),(END,38)]:
+    for frame,lens in [(1,48),(105,40),(210,48),(275,48),(END,48)]:
         camera.data.lens = lens
         camera.data.keyframe_insert(data_path="lens", frame=frame)
 
