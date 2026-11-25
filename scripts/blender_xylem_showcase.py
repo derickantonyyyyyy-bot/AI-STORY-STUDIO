@@ -708,7 +708,6 @@ def main():
     # lens for the final view through the vessel entrance.
     # Keep the wider V42 macro lens while the camera remains outside the entrance.
     # V52: face the vertical channel from the front, keeping world Z upright.
-    from mathutils import Vector
     front_direction = Vector((0.0,1.0,0.0))
     camera.rotation_mode = "QUATERNION"
     camera.rotation_quaternion = front_direction.to_track_quat("-Z", "Y")
