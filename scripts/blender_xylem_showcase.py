@@ -673,13 +673,13 @@ def main():
          (0.0, -0.785, 3.22),
          (0.0, -0.785, 3.78),
          (0.0, -0.785, v54_top - 0.10)],
-        0.035, side_water_mat, 12
+        0.024, side_water_mat, 12
     )
     for i in range(8):
         drop = uv(
             "V54_Ascending_Water_Droplet",
             (0.0, -0.825, 2.82),
-            (0.030, 0.028, 0.072),
+            (0.022, 0.022, 0.052),
             side_water_mat, 24, 16
         )
         x_offset = (-0.045, 0.0, 0.045)[i % 3]
@@ -757,8 +757,8 @@ def main():
     # V47: a subtle off-axis view exposes the vessel's length instead of
     # presenting the entrance as a flat circular target. The camera ray still
     # passes through the centre of the bark aperture.
-    key_location(camera, 275, (0.0,-2.65,3.68))
-    key_location(camera, END, (0.0,-2.65,3.68))
+    key_location(camera, 275, (0.0,-4.30,3.68))
+    key_location(camera, END, (0.0,-4.30,3.68))
     for frame, loc in [
         (1,(0,0.0,2.45)),
         (105,(0,-0.12,2.72)),
@@ -779,7 +779,7 @@ def main():
     camera.keyframe_insert(data_path="rotation_quaternion", frame=275)
     camera.keyframe_insert(data_path="rotation_quaternion", frame=END)
 
-    for frame,lens in [(1,48),(105,40),(210,48),(275,55),(END,55)]:
+    for frame,lens in [(1,48),(105,40),(210,48),(275,48),(END,48)]:
         camera.data.lens = lens
         camera.data.keyframe_insert(data_path="lens", frame=frame)
 
