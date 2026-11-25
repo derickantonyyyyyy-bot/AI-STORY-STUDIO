@@ -469,19 +469,18 @@ def main():
     for poly in wall_mesh.polygons:
         poly.use_smooth = True
 
-    # Sparse, shallow wall ridges give depth without creating a tunnel
-    # full of repeated circular hoops in the final macro composition.
-    for k in range(4):
-        # Start the shallow wall detail deeper in the lumen so it does not
-        # stack up at the entrance and read as a giant circular medallion.
-        yy = 0.35 + k * 1.75
-        bpy.ops.mesh.primitive_torus_add(
-            major_radius=tunnel_radius - 0.008, minor_radius=0.010,
-            major_segments=48, minor_segments=8,
-            location=(0, yy, 3.28), rotation=(math.radians(90), 0, 0)
-        )
-        apply_mat(bpy.context.object, tunnel_ring_mat)
-        bpy.context.object.name = "Subtle_Vessel_Wall_Ridge"
+    # V48: replace repeated circular hoops with two continuous longitudinal
+    # wall seams. These guide the eye down the vessel instead of making it
+    # look like a stack of rings.
+    for side in (-1, 1):
+        x = side * (tunnel_radius - 0.035)
+        curve_tube("Longitudinal_Vessel_Wall_Seam",
+                   [(x, tunnel_y_start + 0.10, 3.18),
+                    (x, 1.2, 3.18),
+                    (x, 3.4, 3.18),
+                    (x, 5.6, 3.18),
+                    (x, tunnel_y_end - 0.12, 3.18)],
+                   0.012, tunnel_fibre_mat, 8)
     # V32: remove the four high-contrast longitudinal ribs from the
     # camera-facing vessel interior. They read as bars across the lumen.
     # Keep the wall and subtle annular ridges to communicate tunnel depth.
@@ -489,7 +488,7 @@ def main():
     flow_mat = emissive("Xylem_Flow_Glow", (0.025, 0.42, 0.82), 1.05)
     curve_tube("Central_Water_Flow", [(0, 0.15, 3.28),
                (0, 1.8, 3.28), (0, 4.6, 3.28), (0, tunnel_y_end-0.2, 3.28)],
-               0.016, flow_mat)
+               0.026, flow_mat)
 
     # V13: three slim helical flow filaments make the stream read as directional
     # transport through the vessel, rather than isolated decorative beads.
@@ -622,8 +621,8 @@ def main():
     # V47: a subtle off-axis view exposes the vessel's length instead of
     # presenting the entrance as a flat circular target. The camera ray still
     # passes through the centre of the bark aperture.
-    key_location(camera, 275, (-0.16,-2.00,3.28))
-    key_location(camera, END, (-0.16,-2.00,3.28))
+    key_location(camera, 275, (-0.28,-2.00,3.28))
+    key_location(camera, END, (-0.28,-2.00,3.28))
     for frame, loc in [
         (1,(0,0.0,2.45)),
         (105,(0,-0.12,2.72)),
