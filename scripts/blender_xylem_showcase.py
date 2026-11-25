@@ -589,59 +589,59 @@ def main():
             )
             particle.keyframe_insert(data_path="location", frame=frame)
 
-    # V51: replace the curved tube with a simple, open-sided teaching cutaway.
-    # The camera looks across the open +X side; a flat back panel and two
-    # long edge rails frame the lumen without enclosing or obscuring it.
-    side_wall_mat = material("Open_Xylem_Cutaway_Wall", (0.035, 0.16, 0.19), 0.62)
-    side_edge_mat = material("Xylem_Cutaway_Edges", (0.12, 0.42, 0.44), 0.38)
-    side_water_mat = emissive("Longitudinal_Water_Stream", (0.015, 0.48, 0.98), 2.1)
+    # V52: a vertical open-sided xylem cutaway aligned with the tree trunk.
+    # The camera stays on the original front axis; world Z is the flow direction.
+    side_wall_mat = material("Vertical_Xylem_Back_Panel", (0.025, 0.15, 0.18), 0.58)
+    side_edge_mat = material("Vertical_Xylem_Cut_Edges", (0.12, 0.43, 0.46), 0.35)
+    side_water_mat = emissive("Vertical_Xylem_Water_Stream", (0.012, 0.48, 0.98), 2.0)
 
+    z_bottom, z_top = 2.72, 4.62
     panel_verts = [
-        (-0.245, 0.0, 3.00), (-0.245, 7.75, 3.00),
-        (-0.245, 7.75, 3.56), (-0.245, 0.0, 3.56)
+        (-0.245, 0.12, z_bottom), (0.245, 0.12, z_bottom),
+        (0.245, 0.12, z_top), (-0.245, 0.12, z_top)
     ]
-    panel_mesh = bpy.data.meshes.new("Open_Xylem_Back_Panel_Mesh")
+    panel_mesh = bpy.data.meshes.new("Vertical_Xylem_Back_Panel_Mesh")
     panel_mesh.from_pydata(panel_verts, [], [(0,1,2,3)])
     panel_mesh.materials.append(side_wall_mat)
-    panel = bpy.data.objects.new("Open_Xylem_Back_Panel", panel_mesh)
+    panel = bpy.data.objects.new("Vertical_Xylem_Back_Panel", panel_mesh)
     bpy.context.collection.objects.link(panel)
     panel.hide_render = True
     panel.keyframe_insert(data_path="hide_render", frame=274)
     panel.hide_render = False
     panel.keyframe_insert(data_path="hide_render", frame=275)
 
-    # Upper and lower cut edges give the vessel a readable longitudinal shape.
-    for z in (3.00, 3.56):
-        rail = curve_tube("Open_Xylem_Cutaway_Edge",
-            [(-0.12, 0.0, z), (-0.12, 1.9, z),
-             (-0.12, 3.9, z), (-0.12, 5.9, z),
-             (-0.12, 7.75, z)], 0.045, side_edge_mat, 10)
+    # Two vertical cut edges frame the open channel without enclosing it.
+    for x in (-0.245, 0.245):
+        rail = curve_tube("Vertical_Xylem_Cut_Edge",
+            [(x, -0.04, z_bottom), (x, -0.04, 3.25),
+             (x, -0.04, 3.85), (x, -0.04, z_top)],
+            0.038, side_edge_mat, 10)
         rail.hide_render = True
         rail.keyframe_insert(data_path="hide_render", frame=274)
         rail.hide_render = False
         rail.keyframe_insert(data_path="hide_render", frame=275)
 
-    # A bright, continuous stream is placed in front of the dark back panel.
-    side_stream = curve_tube("Longitudinal_Visible_Water_Stream",
-        [(0.015, 0.05, 3.28), (0.015, 1.8, 3.28),
-         (0.015, 3.8, 3.28), (0.015, 5.8, 3.28),
-         (0.015, 7.65, 3.28)], 0.058, side_water_mat, 16)
+    # Water moves vertically upward through the centre of the open channel.
+    side_stream = curve_tube("Vertical_Visible_Water_Stream",
+        [(0.0, -0.12, z_bottom+0.08), (0.0, -0.12, 3.25),
+         (0.0, -0.12, 3.82), (0.0, -0.12, z_top-0.08)],
+        0.052, side_water_mat, 16)
     side_stream.hide_render = True
     side_stream.keyframe_insert(data_path="hide_render", frame=274)
     side_stream.hide_render = False
     side_stream.keyframe_insert(data_path="hide_render", frame=275)
 
-    # Larger travelling droplets make upward movement legible at portrait scale.
+    # Nine distinct droplets travel upward along world Z.
     for i in range(9):
-        drop = uv("Longitudinal_Water_Droplet", (0.06, 0.2, 3.28),
-                  (0.045, 0.13, 0.045), side_water_mat, 24, 16)
+        drop = uv("Vertical_Xylem_Water_Droplet", (0.0, -0.17, 2.85),
+                  (0.042, 0.042, 0.095), side_water_mat, 24, 16)
         drop.hide_render = True
         drop.keyframe_insert(data_path="hide_render", frame=274)
         drop.hide_render = False
         drop.keyframe_insert(data_path="hide_render", frame=275)
-        y0 = 0.30 + i * 0.86
-        for frame, yy in ((275, y0), (END, y0 + 1.45)):
-            drop.location = (0.06, yy, 3.28)
+        z0 = 2.82 + i * 0.19
+        for frame, zz in ((275, z0), (END, min(z0 + 0.72, z_top-0.12))):
+            drop.location = (0.0, -0.17, zz)
             drop.keyframe_insert(data_path="location", frame=frame)
 
     # Hide the old head-on tunnel assembly when the longitudinal cutaway appears.
@@ -674,9 +674,7 @@ def main():
     # V45: restore the stable world-Y camera-up orientation from V42/V43.
     track.up_axis = "UP_Y"
     scene.camera = camera
-    # V50: release the Track-To constraint for the final side-on cutaway.
-    # The final camera is rolled so the vessel's Y-axis reads vertically in
-    # the portrait frame, with world Z kept out of the way.
+    # V52: switch to a stable front view for the vertical cutaway at frame 275.
     track.keyframe_insert(data_path="influence", frame=274)
     track.influence = 0.0
     track.keyframe_insert(data_path="influence", frame=275)
@@ -694,14 +692,14 @@ def main():
     # V47: a subtle off-axis view exposes the vessel's length instead of
     # presenting the entrance as a flat circular target. The camera ray still
     # passes through the centre of the bark aperture.
-    key_location(camera, 275, (3.35,3.65,3.28))
-    key_location(camera, END, (3.35,3.65,3.28))
+    key_location(camera, 275, (0.0,-2.65,3.68))
+    key_location(camera, END, (0.0,-2.65,3.68))
     for frame, loc in [
         (1,(0,0.0,2.45)),
         (105,(0,-0.12,2.72)),
         (210,(0,-0.55,3.05)),
-        (275,(0.0,3.65,3.28)),
-        (END,(0.0,3.65,3.28))
+        (275,(0.0,0.10,3.68)),
+        (END,(0.0,0.10,3.68))
     ]:
         target.location = loc
         target.keyframe_insert(data_path="location", frame=frame)
@@ -709,16 +707,15 @@ def main():
     # the establishing/approach framing, then use a genuinely wider macro
     # lens for the final view through the vessel entrance.
     # Keep the wider V42 macro lens while the camera remains outside the entrance.
-    # V51: no camera roll. World Y is the portrait-frame vertical axis,
-    # so the vessel reads as a tall longitudinal cutaway.
-    from mathutils import Quaternion
-    side_direction = Vector((0.0,3.65,3.28)) - Vector((3.35,3.65,3.28))
+    # V52: face the vertical channel from the front, keeping world Z upright.
+    from mathutils import Vector
+    front_direction = Vector((0.0,1.0,0.0))
     camera.rotation_mode = "QUATERNION"
-    camera.rotation_quaternion = side_direction.to_track_quat("-Z", "Y")
+    camera.rotation_quaternion = front_direction.to_track_quat("-Z", "Y")
     camera.keyframe_insert(data_path="rotation_quaternion", frame=275)
     camera.keyframe_insert(data_path="rotation_quaternion", frame=END)
 
-    for frame,lens in [(1,48),(105,40),(210,48),(275,48),(END,48)]:
+    for frame,lens in [(1,48),(105,40),(210,48),(275,55),(END,55)]:
         camera.data.lens = lens
         camera.data.keyframe_insert(data_path="lens", frame=frame)
 
