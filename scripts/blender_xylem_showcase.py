@@ -600,7 +600,7 @@ def main():
     for yi in range(side_rings + 1):
         yy = 0.0 + (7.75 * yi / side_rings)
         for ai in range(side_steps + 1):
-            angle = -math.pi/2 + math.pi * ai / side_steps
+            angle = math.pi/2 + math.pi * ai / side_steps
             rr = tunnel_radius - 0.018
             side_verts.append((math.cos(angle) * rr, yy,
                                3.28 + math.sin(angle) * rr))
@@ -672,6 +672,12 @@ def main():
     # V45: restore the stable world-Y camera-up orientation from V42/V43.
     track.up_axis = "UP_Y"
     scene.camera = camera
+    # V50: release the Track-To constraint for the final side-on cutaway.
+    # The final camera is rolled so the vessel's Y-axis reads vertically in
+    # the portrait frame, with world Z kept out of the way.
+    track.keyframe_insert(data_path="influence", frame=274)
+    track.influence = 0.0
+    track.keyframe_insert(data_path="influence", frame=275)
 
     # A gradual, continuous dolly-in; the final target sits on the actual
     # front-facing xylem window rather than the trunk's centre.
@@ -686,8 +692,8 @@ def main():
     # V47: a subtle off-axis view exposes the vessel's length instead of
     # presenting the entrance as a flat circular target. The camera ray still
     # passes through the centre of the bark aperture.
-    key_location(camera, 275, (-3.35,3.65,3.28))
-    key_location(camera, END, (-3.35,3.65,3.28))
+    key_location(camera, 275, (3.35,3.65,3.28))
+    key_location(camera, END, (3.35,3.65,3.28))
     for frame, loc in [
         (1,(0,0.0,2.45)),
         (105,(0,-0.12,2.72)),
@@ -701,6 +707,17 @@ def main():
     # the establishing/approach framing, then use a genuinely wider macro
     # lens for the final view through the vessel entrance.
     # Keep the wider V42 macro lens while the camera remains outside the entrance.
+    # Compute a stable side-view camera orientation at the cutaway reveal.
+    # Roll the camera 90 degrees so the vessel length (world Y) runs vertically.
+    from mathutils import Quaternion
+    side_direction = Vector((0.0,3.65,3.28)) - Vector((3.35,3.65,3.28))
+    side_rotation = side_direction.to_track_quat("-Z", "Y")
+    side_roll = Quaternion((0.0,0.0,1.0), math.radians(90.0))
+    camera.rotation_mode = "QUATERNION"
+    camera.rotation_quaternion = side_rotation @ side_roll
+    camera.keyframe_insert(data_path="rotation_quaternion", frame=275)
+    camera.keyframe_insert(data_path="rotation_quaternion", frame=END)
+
     for frame,lens in [(1,48),(105,40),(210,48),(275,48),(END,48)]:
         camera.data.lens = lens
         camera.data.keyframe_insert(data_path="lens", frame=frame)
