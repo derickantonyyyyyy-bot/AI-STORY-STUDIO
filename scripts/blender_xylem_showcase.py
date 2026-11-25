@@ -581,7 +581,9 @@ def main():
     track = camera.constraints.new(type="TRACK_TO")
     track.target = target
     track.track_axis = "TRACK_NEGATIVE_Z"
-    track.up_axis = "UP_Y"
+    # V44: use world Z as camera up; the vessel runs along world Y,
+    # so UP_Y becomes parallel to the viewing direction during the tunnel dive.
+    track.up_axis = "UP_Z"
     scene.camera = camera
 
     # A gradual, continuous dolly-in; the final target sits on the actual
@@ -602,14 +604,15 @@ def main():
         (105,(0,-0.12,2.72)),
         (210,(0,-0.55,3.05)),
         (275,(0,3.25,3.28)),
-        (END,(0,7.20,3.28))
+        (END,(0,2.20,3.28))
     ]:
         target.location = loc
         target.keyframe_insert(data_path="location", frame=frame)
     # V28: the later lens keyframes are the active ones in Blender. Keep
     # the establishing/approach framing, then use a genuinely wider macro
     # lens for the final view through the vessel entrance.
-    for frame,lens in [(1,48),(105,40),(210,48),(275,28),(END,28)]:
+    # Tighten the macro framing as the camera enters the vessel lumen.
+    for frame,lens in [(1,48),(105,40),(210,48),(275,28),(END,50)]:
         camera.data.lens = lens
         camera.data.keyframe_insert(data_path="lens", frame=frame)
 
