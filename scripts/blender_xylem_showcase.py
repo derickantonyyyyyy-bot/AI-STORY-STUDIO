@@ -471,8 +471,10 @@ def main():
 
     # Sparse, shallow wall ridges give depth without creating a tunnel
     # full of repeated circular hoops in the final macro composition.
-    for k in range(7):
-        yy = tunnel_y_start + k * 1.20
+    for k in range(4):
+        # Start the shallow wall detail deeper in the lumen so it does not
+        # stack up at the entrance and read as a giant circular medallion.
+        yy = 0.35 + k * 1.75
         bpy.ops.mesh.primitive_torus_add(
             major_radius=tunnel_radius - 0.008, minor_radius=0.010,
             major_segments=48, minor_segments=8,
@@ -485,9 +487,9 @@ def main():
     # Keep the wall and subtle annular ridges to communicate tunnel depth.
     # One continuous central stream carries the viewer's eye into the lumen.
     flow_mat = emissive("Xylem_Flow_Glow", (0.025, 0.42, 0.82), 1.05)
-    curve_tube("Central_Water_Flow", [(0, tunnel_y_start+0.1, 3.28),
-               (0, 1.2, 3.28), (0, 4.2, 3.28), (0, tunnel_y_end-0.2, 3.28)],
-               0.048, flow_mat)
+    curve_tube("Central_Water_Flow", [(0, 0.15, 3.28),
+               (0, 1.8, 3.28), (0, 4.6, 3.28), (0, tunnel_y_end-0.2, 3.28)],
+               0.016, flow_mat)
 
     # V13: three slim helical flow filaments make the stream read as directional
     # transport through the vessel, rather than isolated decorative beads.
@@ -497,7 +499,7 @@ def main():
         points = []
         for step in range(13):
             t = step / 12.0
-            yy = tunnel_y_start + 0.18 + t * (tunnel_y_end - tunnel_y_start - 0.36)
+            yy = 0.10 + t * (tunnel_y_end - 0.28)
             angle = phase + t * math.tau * 2.1
             radius = 0.135
             points.append((radius * math.cos(angle), yy,
