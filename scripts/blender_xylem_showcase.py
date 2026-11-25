@@ -542,19 +542,19 @@ def main():
     # camera follows them. Their staggered positions create depth and direction
     # without placing any pulse in front of the camera.
     pulse_mat = emissive("Water_Travel_Pulse_Glow", (0.035, 0.58, 1.0), 1.45)
-    pulse_count = 9
+    pulse_count = 7
     pulse_start_frame = 275
     pulse_end_frame = END
-    pulse_travel = 1.80
+    pulse_travel = 2.35
     for i in range(pulse_count):
         pulse = uv(
             "Water_Travel_Pulse",
             (0.0, tunnel_y_start, 3.28),
-            (0.025, 0.090, 0.025),
+            (0.018, 0.075, 0.018),
             pulse_mat, 24, 16
         )
         phase = i * 0.73
-        start_y = 0.35 + i * 0.68
+        start_y = 0.45 + i * 0.78
         end_y = start_y + pulse_travel
         for frame, yy in (
             (pulse_start_frame, start_y),
@@ -567,6 +567,28 @@ def main():
                 3.28 + 0.105 * math.sin(angle)
             )
             pulse.keyframe_insert(data_path="location", frame=frame)
+
+    # V47: fine trailing micro-droplets make the water read as a moving
+    # stream. They travel along the vessel axis with a slight staggered drift.
+    particle_mat = emissive("Water_Micro_Particle_Glow", (0.10, 0.68, 1.0), 1.0)
+    for i in range(14):
+        particle = uv(
+            "Water_Travel_Micro_Particle",
+            (0.0, 0.5, 3.28),
+            (0.010, 0.030, 0.010),
+            particle_mat, 16, 10
+        )
+        start_y = 0.25 + i * 0.43
+        end_y = start_y + 2.15
+        phase = i * 1.71
+        for frame, yy in ((pulse_start_frame, start_y),
+                          (pulse_end_frame, end_y)):
+            particle.location = (
+                0.045 * math.cos(phase + (frame-pulse_start_frame)*0.025),
+                yy,
+                3.28 + 0.045 * math.sin(phase + (frame-pulse_start_frame)*0.025)
+            )
+            particle.keyframe_insert(data_path="location", frame=frame)
 
     # No floating 3D labels: clean, synchronized captions will be composited later.
 
@@ -597,14 +619,17 @@ def main():
     # volume would occlude the view; looking through the mouth reveals the lumen.
     # V45: hold the camera outside the trunk for the entire macro section.
     # This preserves the proven entrance framing while we test orientation alone.
-    key_location(camera, 275, (0,-2.00,3.28))
-    key_location(camera, END, (0,-2.00,3.28))
+    # V47: a subtle off-axis view exposes the vessel's length instead of
+    # presenting the entrance as a flat circular target. The camera ray still
+    # passes through the centre of the bark aperture.
+    key_location(camera, 275, (-0.16,-2.00,3.28))
+    key_location(camera, END, (-0.16,-2.00,3.28))
     for frame, loc in [
         (1,(0,0.0,2.45)),
         (105,(0,-0.12,2.72)),
         (210,(0,-0.55,3.05)),
-        (275,(0,3.25,3.28)),
-        (END,(0,4.10,3.28))
+        (275,(0.35,3.25,3.28)),
+        (END,(0.75,4.10,3.28))
     ]:
         target.location = loc
         target.keyframe_insert(data_path="location", frame=frame)
@@ -612,7 +637,7 @@ def main():
     # the establishing/approach framing, then use a genuinely wider macro
     # lens for the final view through the vessel entrance.
     # Keep the wider V42 macro lens while the camera remains outside the entrance.
-    for frame,lens in [(1,48),(105,40),(210,48),(275,28),(END,28)]:
+    for frame,lens in [(1,48),(105,40),(210,48),(275,38),(END,38)]:
         camera.data.lens = lens
         camera.data.keyframe_insert(data_path="lens", frame=frame)
 
