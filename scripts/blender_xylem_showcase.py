@@ -614,7 +614,7 @@ def main():
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
     apply_mat(channel_back, channel_back_mat)
     back_bevel = channel_back.modifiers.new("V54_Channel_Soft_Edges", "BEVEL")
-    back_bevel.width = 0.035
+    back_bevel.width = 0.008
     back_bevel.segments = 4
 
     # V56: slim irregular cut edges follow the trunk's curved front face.
