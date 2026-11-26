@@ -4,7 +4,7 @@ Run:
   blender -b -P scripts/blender_character_foundation.py -- out/character-foundation.mp4
 Creates a rigged, expressive cartoon character, a simple studio, and a short wave/blink preview.
 """
-import bpy, math, os, sys
+import bpy, math, os, sys, shutil, subprocess
 from mathutils import Vector
 
 FPS = 30
@@ -98,8 +98,13 @@ def main():
     scene.render.engine="BLENDER_EEVEE_NEXT" if "BLENDER_EEVEE_NEXT" in engines else ("BLENDER_EEVEE" if "BLENDER_EEVEE" in engines else "CYCLES")
     scene.render.resolution_x=720; scene.render.resolution_y=1280; scene.render.resolution_percentage=100
     scene.render.fps=FPS; scene.frame_start=1; scene.frame_end=END
-    scene.render.image_settings.file_format="FFMPEG"; scene.render.ffmpeg.format="MPEG4"; scene.render.ffmpeg.codec="H264"
-    scene.render.image_settings.color_mode="RGB"; scene.render.filepath=out
+    # Blender builds without FFmpeg support cannot write video directly.
+    # Render a PNG sequence first; encode it to MP4 if an ffmpeg executable is available.
+    scene.render.image_settings.file_format="PNG"
+    scene.render.image_settings.color_mode="RGB"
+    frame_dir=os.path.splitext(out)[0]+"_frames"
+    os.makedirs(frame_dir,exist_ok=True)
+    scene.render.filepath=os.path.join(frame_dir,"frame_")
     scene.view_settings.view_transform="AgX"
     scene.render.film_transparent=False
 
@@ -202,7 +207,16 @@ def main():
     blend_path=os.path.splitext(out)[0]+".blend"
     bpy.ops.wm.save_as_mainfile(filepath=blend_path)
     bpy.ops.render.render(animation=True)
-    print("CHARACTER_PREVIEW:",out)
+    ffmpeg=shutil.which("ffmpeg")
+    if ffmpeg:
+        pattern=os.path.join(frame_dir,"frame_%04d.png")
+        cmd=[ffmpeg,"-y","-framerate",str(FPS),"-i",pattern,"-c:v","libx264","-pix_fmt","yuv420p","-movflags","+faststart",out]
+        subprocess.run(cmd,check=True)
+        print("CHARACTER_PREVIEW:",out)
+    else:
+        print("FFMPEG_NOT_FOUND: PNG frames saved in",frame_dir)
+        print("Install FFmpeg and run this command from PowerShell:")
+        print('ffmpeg -y -framerate 30 -i "'+os.path.join(frame_dir,"frame_%04d.png")+'" -c:v libx264 -pix_fmt yuv420p "'+out+'"')
     print("EDITABLE_BLEND:",blend_path)
 
 if __name__=="__main__":
