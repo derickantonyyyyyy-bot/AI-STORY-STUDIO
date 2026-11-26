@@ -687,47 +687,56 @@ def main():
                 pts.append((xx, yy, z))
             curve_tube("V58_Recessed_Wood_Grain", pts, 0.004, cutaway_grain_mat, 8)
 
-    vessel_x_positions = (-0.17, 0.015, 0.19)
-    for lane, x in enumerate(vessel_x_positions):
-        y = -math.sqrt(max(0.025, trunk_radius * trunk_radius - x * x)) + 0.075
-        sway = (0.020, -0.014, 0.026)[lane]
-        vessel_points = [
-            (x - sway * 0.55, y, 2.83),
-            (x + sway * 0.85, y - 0.008, 3.24),
-            (x - sway, y - 0.012, 3.72),
-            (x + sway * 0.65, y - 0.004, 4.43)
-        ]
+    # V63: vessels are narrow, irregular recessed channels with a subdued
+    # inner water thread. Different paths and widths avoid the "three blue bars"
+    # look; the channels sit inside the wood bed rather than floating in front.
+    vessel_paths = [
+        [(-0.205,2.78),(-0.192,3.02),(-0.158,3.28),(-0.178,3.56),(-0.142,3.91),(-0.126,4.45)],
+        [(-0.005,2.80),(0.018,3.06),(-0.012,3.32),(0.026,3.61),(0.004,3.93),(0.035,4.47)],
+        [(0.205,2.82),(0.174,3.08),(0.213,3.35),(0.182,3.63),(0.224,3.96),(0.190,4.44)]
+    ]
+    vessel_radii = (0.013, 0.017, 0.012)
+    for lane, path_points in enumerate(vessel_paths):
+        vessel_points = []
+        water_points = []
+        for index, (px, pz) in enumerate(path_points):
+            surface_y = -math.sqrt(max(0.025, trunk_radius * trunk_radius - px * px))
+            vessel_y = surface_y + 0.080 + 0.006 * math.sin(index * 1.7 + lane)
+            vessel_points.append((px, vessel_y, pz))
+            water_points.append((px + 0.0015 * math.sin(index + lane),
+                                 vessel_y - 0.014, pz))
         vessel = curve_tube("V58_Embedded_Xylem_Vessel", vessel_points,
-                            (0.014, 0.020, 0.016)[lane], vessel_wall_mat, 12)
-        # Uneven radii and gentle bends keep the vessels organic rather than
-        # three identical straight blue bars.
+                            vessel_radii[lane], vessel_wall_mat, 12)
         for point, radius in zip(vessel.data.splines[0].bezier_points,
-                                 (0.78, 1.12, 0.88, 1.04)):
+                                 (0.62, 0.92, 1.10, 0.78, 1.04, 0.66)):
             point.radius = radius
-        highlight_points = [
-            (px - 0.010, py - 0.012, pz)
-            for px, py, pz in vessel_points
-        ]
-        curve_tube("V58_Xylem_Vessel_Highlight", highlight_points,
-                   0.0020, vessel_edge_mat, 6)
 
-        # Distinct bright droplets travel upward with staggered timing.
-        for i in range(5):
+        # A very fine, broken-looking water core stays inside each dark lumen.
+        water_core = curve_tube("V63_Xylem_Water_Core", water_points,
+                                0.0048 if lane != 1 else 0.0058,
+                                rising_water_mat, 8)
+        for point, radius in zip(water_core.data.splines[0].bezier_points,
+                                 (0.55, 0.90, 0.72, 1.0, 0.68, 0.52)):
+            point.radius = radius
+
+        # Individual elongated droplets move upward through the channel.
+        for i in range(4):
             drop = uv(
                 "V58_Ascending_Water_Droplet",
-                (x, y - 0.030, 2.90),
-                (0.008, 0.009, 0.034), rising_water_mat, 16, 10
+                (path_points[0][0], water_points[0][1] - 0.004, 2.9),
+                (0.006, 0.006, 0.023 + 0.003 * ((i + lane) % 2)),
+                rising_water_mat, 16, 10
             )
-            z0 = 2.86 + i * 0.25 + lane * 0.09
-            start_frame = 250 + i * 5 + lane * 3
-            end_frame = min(END, start_frame + 105)
-            for frame, zz in ((start_frame, z0),
-                              (end_frame, min(z0 + 1.02, 4.52))):
-                drop.location = (
-                    x + sway * math.sin(zz * 2.1),
-                    y - 0.036,
-                    zz
-                )
+            z0 = 2.88 + i * 0.31 + lane * 0.12
+            start_frame = 275 + i * 7 + lane * 4
+            end_frame = min(END, start_frame + 78)
+            x0 = path_points[0][0]
+            x1 = path_points[-1][0]
+            for frame, progress in ((start_frame, 0.0), (end_frame, 1.0)):
+                zz = min(z0 + 0.76, 4.52) if progress else z0
+                xx = x0 + (x1 - x0) * progress + 0.012 * math.sin(zz * 3.0 + lane)
+                surface_y = -math.sqrt(max(0.025, trunk_radius * trunk_radius - xx * xx))
+                drop.location = (xx, surface_y + 0.045, zz)
                 drop.keyframe_insert(data_path="location", frame=frame)
 
     # V62: overlap the natural wood bed with the retirement of legacy geometry.
@@ -737,7 +746,8 @@ def main():
     v62_wood_prefixes = (
         "V58_Recessed_Wood_Bed", "V58_Carved_Bark_Edge",
         "V58_Recessed_Wood_Grain", "V61_Exposed_Wood_Grain",
-        "V58_Embedded_Xylem_Vessel", "V58_Xylem_Vessel_Highlight"
+        "V58_Embedded_Xylem_Vessel", "V58_Xylem_Vessel_Highlight",
+        "V63_Xylem_Water_Core"
     )
     for obj in list(bpy.data.objects):
         if obj.name.startswith(v62_wood_prefixes):
@@ -749,9 +759,9 @@ def main():
     for obj in list(bpy.data.objects):
         if obj.name.startswith("V58_Ascending_Water_Droplet"):
             obj.hide_render = True
-            obj.keyframe_insert(data_path="hide_render", frame=250)
+            obj.keyframe_insert(data_path="hide_render", frame=275)
             obj.hide_render = False
-            obj.keyframe_insert(data_path="hide_render", frame=290)
+            obj.keyframe_insert(data_path="hide_render", frame=280)
 
     # Hide every legacy circular-mouth component for the final shot. The
     # circular lip, oval shells, old channel connectors and tunnel must not
