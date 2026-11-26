@@ -599,17 +599,38 @@ def main():
     trunk_radius = 0.466
     z_bottom, z_top = 2.57, 4.69
 
-    # Rounded, slightly uneven cutter removes the bark and front wood to form
-    # a real shallow cavity. Its rear face stops inside the trunk.
-    bpy.ops.mesh.primitive_uv_sphere_add(
-        segments=48, ring_count=32, radius=1,
-        location=(0.0, -0.405, 3.63)
-    )
-    v58_cutter = bpy.context.object
-    v58_cutter.name = "V58_Temporary_Cutaway_Cutter"
-    v58_cutter.scale = (0.385, 0.66, 1.12)
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    trunk_cut = trunk.modifiers.new("V58_Carved_Trunk_Window", "BOOLEAN")
+    # V65: replace the almond-shaped spherical carve with a broad, irregular
+    # longitudinal bark window. A softly rounded, uneven polygon gives the
+    # reveal a natural split-wood silhouette instead of a framed oval insert.
+    outline = []
+    corner_steps = 8
+    half_w, half_h = 0.345, 1.055
+    corner_r = 0.105
+    corners = [
+        (half_w-corner_r, half_h-corner_r, 0, 90),
+        (-half_w+corner_r, half_h-corner_r, 90, 180),
+        (-half_w+corner_r, -half_h+corner_r, 180, 270),
+        (half_w-corner_r, -half_h+corner_r, 270, 360),
+    ]
+    for cx, cz, a0, a1 in corners:
+        for k in range(corner_steps + 1):
+            a = math.radians(a0 + (a1-a0)*k/corner_steps)
+            x = cx + corner_r*math.cos(a)
+            z = cz + corner_r*math.sin(a)
+            # Small deterministic edge variation avoids a manufactured rectangle.
+            x += 0.010 * math.sin(z*5.1 + x*8.0)
+            z += 0.012 * math.sin(x*7.0 + z*2.4)
+            outline.append((x, z))
+    cutter_verts = [(x, y, z+3.63) for y in (-1.15, 0.24) for x, z in outline]
+    n = len(outline)
+    cutter_faces = [tuple(range(n-1, -1, -1)), tuple(range(n, 2*n))]
+    cutter_faces += [(i, (i+1)%n, (i+1)%n+n, i+n) for i in range(n)]
+    cutter_mesh = bpy.data.meshes.new("V65_Organic_Window_Cutter_Mesh")
+    cutter_mesh.from_pydata(cutter_verts, [], cutter_faces)
+    cutter_mesh.update()
+    v58_cutter = bpy.data.objects.new("V58_Temporary_Cutaway_Cutter", cutter_mesh)
+    bpy.context.collection.objects.link(v58_cutter)
+    trunk_cut = trunk.modifiers.new("V65_Natural_Trunk_Window", "BOOLEAN")
     trunk_cut.operation = "DIFFERENCE"
     trunk_cut.solver = "EXACT"
     trunk_cut.object = v58_cutter
@@ -617,24 +638,22 @@ def main():
     bpy.ops.object.modifier_apply(modifier=trunk_cut.name)
     bpy.data.objects.remove(v58_cutter, do_unlink=True)
 
-    # A recessed curved wood bed sits behind the carved bark edge and closes
-    # the old round passage. Its outline varies subtly so it reads as wood.
+    # V65: broad, nearly parallel sides and softened ends follow the new
+    # split-wood opening. The bed remains recessed and follows trunk curvature.
     patch_verts = []
     patch_faces = []
-    rows, cols = 37, 21
+    rows, cols = 41, 25
     for row in range(rows):
         t = row / (rows - 1)
         z = z_bottom + (z_top - z_bottom) * t
-        # An elongated, tapered botanical window rather than a rectangular insert.
-        taper = max(0.035, math.sin(math.pi * t) ** 0.48)
-        edge = 0.355 * taper * (1.0 + 0.045 * math.sin(t * math.tau * 2.0))
+        end_round = math.sqrt(max(0.015, 1.0 - abs(2.0*t-1.0)**4))
+        edge = 0.337 * end_round * (1.0 + 0.025 * math.sin(t * math.tau * 2.0))
         for col in range(cols):
             u = col / (cols - 1) * 2.0 - 1.0
-            waviness = 0.010 * math.sin(row * 0.57 + col * 0.42)
+            waviness = 0.006 * math.sin(row * 0.47 + col * 0.31)
             x = edge * u + waviness * abs(u)
-            # The wood bed follows the trunk's curvature and sits inside the bark.
             y = -math.sqrt(max(0.025, trunk_radius * trunk_radius - x * x)) + 0.125
-            z_irregular = z + 0.012 * math.sin(col * 0.63 + row * 0.29) * (abs(u) ** 2)
+            z_irregular = z + 0.008 * math.sin(col * 0.63 + row * 0.29) * (abs(u) ** 2)
             patch_verts.append((x, y, z_irregular))
     for row in range(rows - 1):
         for col in range(cols - 1):
@@ -651,16 +670,17 @@ def main():
     bevel.width = 0.008
     bevel.segments = 2
 
-    # Thin dark cut-edge accents sit just inside the bark boundary.
+    # V65: only a very fine, dark natural split line remains at the sides;
+    # remove the thick pale rim that made the opening read like an insert.
     for side in (-1, 1):
         edge_pts = []
         for z in (2.72, 2.96, 3.28, 3.62, 3.96, 4.28, 4.54):
             t = (z - z_bottom) / (z_top - z_bottom)
-            width = 0.355 * max(0.035, math.sin(math.pi * t) ** 0.48)
-            x = side * (width + 0.010 * math.sin(z * 3.2))
-            y = -math.sqrt(max(0.025, trunk_radius * trunk_radius - x * x)) - 0.012
+            width = 0.337 * math.sqrt(max(0.015, 1.0 - abs(2.0*t-1.0)**4))
+            x = side * (width + 0.004 * math.sin(z * 3.2 + side))
+            y = -math.sqrt(max(0.025, trunk_radius * trunk_radius - x * x)) - 0.006
             edge_pts.append((x, y, z))
-        curve_tube("V58_Carved_Bark_Edge", edge_pts, 0.014, cut_edge_mat, 10)
+        curve_tube("V58_Carved_Bark_Edge", edge_pts, 0.0065, cutaway_grain_mat, 8)
 
     # V61: irregular low-contrast grain runs through the exposed wood itself.
     # These are shallow, curved lines with varied lengths and spacing, not bars.
@@ -726,7 +746,7 @@ def main():
             drop = uv(
                 "V58_Ascending_Water_Droplet",
                 (path_points[0][0], water_points[0][1] - 0.004, 2.9),
-                (0.007, 0.007, 0.027 + 0.003 * ((i + lane) % 2)),
+                (0.012, 0.012, 0.040 + 0.004 * ((i + lane) % 2)),
                 rising_water_mat, 16, 10
             )
             z0 = 2.88 + i * 0.31 + lane * 0.12
@@ -738,7 +758,7 @@ def main():
                 zz = min(z0 + 0.76, 4.52) if progress else z0
                 xx = x0 + (x1 - x0) * progress + 0.012 * math.sin(zz * 3.0 + lane)
                 surface_y = -math.sqrt(max(0.025, trunk_radius * trunk_radius - xx * xx))
-                drop.location = (xx, surface_y + 0.112, zz)
+                drop.location = (xx, surface_y + 0.119, zz)
                 drop.keyframe_insert(data_path="location", frame=frame)
 
     # V62: overlap the natural wood bed with the retirement of legacy geometry.
