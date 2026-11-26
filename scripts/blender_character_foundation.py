@@ -46,9 +46,9 @@ def capsule(name, a, b, radius, material, depth_scale=1.0):
     o.data.materials.append(material)
     bevel=o.modifiers.new("Soft_Limb_Edges","BEVEL"); bevel.width=radius*0.72; bevel.segments=4
     o.modifiers.new("Weighted_Normals","WEIGHTED_NORMAL")
-    uv(name+"_JointA", a, (radius,radius*depth_scale,radius), material)
-    uv(name+"_JointB", b, (radius,radius*depth_scale,radius), material)
-    return o
+    ja=uv(name+"_JointA", a, (radius,radius*depth_scale,radius), material)
+    jb=uv(name+"_JointB", b, (radius,radius*depth_scale,radius), material)
+    return [o, ja, jb]
 
 def curve(name, points, radius, material):
     c=bpy.data.curves.new(name,"CURVE"); c.dimensions="3D"; c.bevel_depth=radius; c.bevel_resolution=4
@@ -131,7 +131,8 @@ def main():
         ir=uv("Iris",(side*.17,-.378,2.765),(.052,.025,.073),iris); attach(ir,rig,"head")
         pu=uv("Pupil",(side*.17,-.399,2.765),(.025,.014,.043),black); attach(pu,rig,"head")
         gl=uv("Eye_Glint",(side*.185,-.412,2.795),(.012,.008,.018),white); attach(gl,rig,"head")
-        curve("Eyebrow",[(side*.08,-.355,2.94),(side*.17,-.37,2.97),(side*.27,-.35,2.94)],.025,brow)
+        brow_obj=curve("Eyebrow",[(side*.08,-.355,2.94),(side*.17,-.37,2.97),(side*.27,-.35,2.94)],.025,brow)
+        attach(brow_obj,rig,"head")
         # Smile corners and cheek tint details
         cheek=uv("Cheek",(side*.27,-.315,2.57),(.075,.018,.045),skin); attach(cheek,rig,"head")
     smile=curve("Friendly_Smile",[(-.12,-.354,2.535),(0,-.372,2.505),(.12,-.354,2.535)],.018,mouth); attach(smile,rig,"head")
@@ -140,15 +141,19 @@ def main():
     # Arms and hands, split into independently rigged upper/lower sections
     for side,label in [(-1,"L"),(1,"R")]:
         sh=(side*.36,0,1.98); el=(side*.69,-.005,1.48); wr=(side*.72,-.025,1.06)
-        upper=capsule("Upper_Arm_"+label,sh,el,.145,shirt,.82); attach(upper,rig,"upper_arm."+label)
+        upper=capsule("Upper_Arm_"+label,sh,el,.145,shirt,.82)
+        for part in upper: attach(part,rig,"upper_arm."+label)
         elbow=uv("Elbow_"+label,el,(.14,.13,.14),shirt); attach(elbow,rig,"upper_arm."+label)
-        fore=capsule("Forearm_"+label,el,wr,.105,skin,.90); attach(fore,rig,"forearm."+label)
+        fore=capsule("Forearm_"+label,el,wr,.105,skin,.90)
+        for part in fore: attach(part,rig,"forearm."+label)
         hand=uv("Hand_"+label,(side*.73,-.035,.98),(.14,.11,.16),skin); attach(hand,rig,"forearm."+label)
     # Legs and shoes
     for side,label in [(-1,"L"),(1,"R")]:
         hip=(side*.19,0,.84); knee=(side*.22,0,.40); ankle=(side*.22,-.015,.11)
-        thigh=capsule("Thigh_"+label,hip,knee,.19,pants,.82); attach(thigh,rig,"thigh."+label)
-        shin=capsule("Shin_"+label,knee,ankle,.125,pants,.85); attach(shin,rig,"shin."+label)
+        thigh=capsule("Thigh_"+label,hip,knee,.19,pants,.82)
+        for part in thigh: attach(part,rig,"thigh."+label)
+        shin=capsule("Shin_"+label,knee,ankle,.125,pants,.85)
+        for part in shin: attach(part,rig,"shin."+label)
         foot=uv("Sneaker_"+label,(side*.22,-.12,.075),(.17,.28,.095),shoes); attach(foot,rig,"shin."+label)
 
     # Wave animation: the character's left arm (screen-right) lifts and waves.
