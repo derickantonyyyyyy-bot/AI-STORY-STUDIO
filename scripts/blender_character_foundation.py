@@ -196,11 +196,9 @@ def main():
     cam.rotation_euler=(Vector((0,0,1.58))-cam.location).to_track_quat("-Z","Y").to_euler()
     cam.data.type="ORTHO"; cam.data.ortho_scale=4.0; scene.camera=cam
     scene.camera.data.lens=50
-    # Smooth motion interpolation
-    for obj in bpy.data.objects:
-        if obj.animation_data and obj.animation_data.action:
-            for fc in obj.animation_data.action.fcurves:
-                for kp in fc.keyframe_points: kp.interpolation="BEZIER"
+    # Blender 5.x uses layered Actions, so the legacy Action.fcurves
+    # collection is not available. Blender's default keyframe interpolation
+    # is BEZIER; leave it unchanged for smooth pose-to-pose motion.
     scene.frame_set(1)
     os.makedirs(os.path.dirname(out),exist_ok=True)
     # Save an editable Blender project alongside the preview.
