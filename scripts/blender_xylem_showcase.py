@@ -207,19 +207,9 @@ def main():
     # V25: carve a real short passage through the trunk so the vessel mouth
     # is not merely drawn over the solid bark surface.
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    bpy.ops.mesh.primitive_cylinder_add(
-        vertices=96, radius=0.305, depth=1.42,
-        location=(0,-0.02,3.28), rotation=(math.radians(90),0,0)
-    )
-    trunk_cutter = bpy.context.object
-    trunk_cutter.name = "Temporary_Xylem_Boolean_Cutter"
-    boolean = trunk.modifiers.new("True_Xylem_Entrance", "BOOLEAN")
-    boolean.operation = "DIFFERENCE"
-    boolean.solver = "EXACT"
-    boolean.object = trunk_cutter
-    bpy.context.view_layer.objects.active = trunk
-    bpy.ops.object.modifier_apply(modifier=boolean.name)
-    bpy.data.objects.remove(trunk_cutter, do_unlink=True)
+    # V60: keep the trunk continuous. The final xylem window is a dedicated
+    # organic cutaway reveal; an old cylindrical bore would leave a circular
+    # hole visible during the camera approach.
     for i in range(9):
         x = -0.38 + i * 0.095
         # Keep bark ridges above and below the camera-facing xylem aperture.
