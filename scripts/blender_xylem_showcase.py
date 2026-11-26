@@ -579,7 +579,7 @@ def main():
             )
             particle.keyframe_insert(data_path="location", frame=frame)
 
-    # V61: let the final macro reveal read as exposed trunk wood, not a striped insert.
+    # V62: let the final macro reveal read as exposed trunk wood, not a striped insert.
     # Preserve the ridges during the establishing shot, then retire them before
     # the macro reveal so they cannot cross or frame the exposed wood like bars.
     for obj in bpy.data.objects:
@@ -730,15 +730,24 @@ def main():
                 )
                 drop.keyframe_insert(data_path="location", frame=frame)
 
-    # Reveal the new xylem bed during the approach; old circular-mouth geometry is retired before the macro shot.
-    v58_prefixes = (
+    # V62: overlap the natural wood bed with the retirement of legacy geometry.
+    # The bed appears one frame before the old mouth is hidden, so the camera
+    # never sees the carved cavity as an empty hole during the approach.
+    # Keep the water droplets on their existing later animation timing.
+    v62_wood_prefixes = (
         "V58_Recessed_Wood_Bed", "V58_Carved_Bark_Edge",
         "V58_Recessed_Wood_Grain", "V61_Exposed_Wood_Grain",
-        "V58_Embedded_Xylem_Vessel",
-        "V58_Xylem_Vessel_Highlight", "V58_Ascending_Water_Droplet"
+        "V58_Embedded_Xylem_Vessel", "V58_Xylem_Vessel_Highlight"
     )
     for obj in list(bpy.data.objects):
-        if obj.name.startswith(v58_prefixes):
+        if obj.name.startswith(v62_wood_prefixes):
+            obj.hide_render = True
+            obj.keyframe_insert(data_path="hide_render", frame=200)
+            obj.hide_render = False
+            obj.keyframe_insert(data_path="hide_render", frame=209)
+
+    for obj in list(bpy.data.objects):
+        if obj.name.startswith("V58_Ascending_Water_Droplet"):
             obj.hide_render = True
             obj.keyframe_insert(data_path="hide_render", frame=250)
             obj.hide_render = False
