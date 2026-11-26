@@ -701,10 +701,12 @@ def main():
         water_points = []
         for index, (px, pz) in enumerate(path_points):
             surface_y = -math.sqrt(max(0.025, trunk_radius * trunk_radius - px * px))
-            vessel_y = surface_y + 0.080 + 0.006 * math.sin(index * 1.7 + lane)
+            # Seat the dark vessel wall almost flush with the recessed wood bed.
+            # The water core sits just inside its front-facing opening.
+            vessel_y = surface_y + 0.119 + 0.0035 * math.sin(index * 1.7 + lane)
             vessel_points.append((px, vessel_y, pz))
             water_points.append((px + 0.0015 * math.sin(index + lane),
-                                 vessel_y - 0.014, pz))
+                                 vessel_y - 0.0035, pz))
         vessel = curve_tube("V58_Embedded_Xylem_Vessel", vessel_points,
                             vessel_radii[lane], vessel_wall_mat, 12)
         for point, radius in zip(vessel.data.splines[0].bezier_points,
@@ -713,7 +715,7 @@ def main():
 
         # A very fine, broken-looking water core stays inside each dark lumen.
         water_core = curve_tube("V63_Xylem_Water_Core", water_points,
-                                0.0048 if lane != 1 else 0.0058,
+                                0.0038 if lane != 1 else 0.0045,
                                 rising_water_mat, 8)
         for point, radius in zip(water_core.data.splines[0].bezier_points,
                                  (0.55, 0.90, 0.72, 1.0, 0.68, 0.52)):
@@ -724,7 +726,7 @@ def main():
             drop = uv(
                 "V58_Ascending_Water_Droplet",
                 (path_points[0][0], water_points[0][1] - 0.004, 2.9),
-                (0.006, 0.006, 0.023 + 0.003 * ((i + lane) % 2)),
+                (0.007, 0.007, 0.027 + 0.003 * ((i + lane) % 2)),
                 rising_water_mat, 16, 10
             )
             z0 = 2.88 + i * 0.31 + lane * 0.12
@@ -736,7 +738,7 @@ def main():
                 zz = min(z0 + 0.76, 4.52) if progress else z0
                 xx = x0 + (x1 - x0) * progress + 0.012 * math.sin(zz * 3.0 + lane)
                 surface_y = -math.sqrt(max(0.025, trunk_radius * trunk_radius - xx * xx))
-                drop.location = (xx, surface_y + 0.045, zz)
+                drop.location = (xx, surface_y + 0.112, zz)
                 drop.keyframe_insert(data_path="location", frame=frame)
 
     # V62: overlap the natural wood bed with the retirement of legacy geometry.
@@ -773,8 +775,8 @@ def main():
         "Continuous_Vessel_Inner_Wall", "Longitudinal_Vessel_Wall_Seam",
         "Central_Water_Flow", "Helical_Water_Flow_Filament",
         "Travelling_Water_Flow_Streak", "Water_Travel_Pulse",
-        "Water_Travel_Micro_Particle", "V57_",
-        "V58_Temporary_Cutaway_Cutter"
+        "Water_Travel_Micro_Particle", "Vertical_Wood_Grain",
+        "V57_", "V58_Temporary_Cutaway_Cutter"
     )
     for obj in list(bpy.data.objects):
         if obj.name.startswith(legacy_final_hide):
