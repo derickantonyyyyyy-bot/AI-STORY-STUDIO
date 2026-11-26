@@ -194,7 +194,7 @@ def main():
     bpy.ops.object.camera_add(location=(0,-8.8,2.35))
     cam=bpy.context.object; cam.name="Character_Camera"
     cam.rotation_euler=(Vector((0,0,1.58))-cam.location).to_track_quat("-Z","Y").to_euler()
-    cam.data.type="ORTHO"; cam.data.ortho_scale=4.0; scene.camera=cam
+    cam.data.type="ORTHO"; cam.data.ortho_scale=7.2; scene.camera=cam
     scene.camera.data.lens=50
     # Blender 5.x uses layered Actions, so the legacy Action.fcurves
     # collection is not available. Blender's default keyframe interpolation
