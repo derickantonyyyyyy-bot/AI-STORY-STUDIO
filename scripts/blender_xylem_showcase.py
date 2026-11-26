@@ -589,7 +589,7 @@ def main():
             )
             particle.keyframe_insert(data_path="location", frame=frame)
 
-    # V59: carve an organic, tapered xylem window into the trunk into the actual trunk.
+    # V60: refine the organic xylem reveal and remove the old circular-mouth look earlier.
     # The old circular boolean opening is covered by the inset wood surface;
     # the surrounding bark remains the real trunk mesh, not a floating panel.
     cutaway_wood_mat = material("V58_Recessed_Trunk_Wood", (0.48, 0.275, 0.135), 0.76)
@@ -680,36 +680,47 @@ def main():
     vessel_x_positions = (-0.17, 0.015, 0.19)
     for lane, x in enumerate(vessel_x_positions):
         y = -math.sqrt(max(0.025, trunk_radius * trunk_radius - x * x)) + 0.075
-        sway = 0.012 if lane == 0 else (-0.009 if lane == 2 else 0.004)
+        sway = (0.020, -0.014, 0.026)[lane]
         vessel_points = [
-            (x, y, 2.83),
-            (x + sway, y - 0.006, 3.28),
-            (x - sway * 0.65, y - 0.008, 3.83),
-            (x + sway * 0.35, y, 4.43)
+            (x - sway * 0.55, y, 2.83),
+            (x + sway * 0.85, y - 0.008, 3.24),
+            (x - sway, y - 0.012, 3.72),
+            (x + sway * 0.65, y - 0.004, 4.43)
         ]
-        curve_tube("V58_Embedded_Xylem_Vessel", vessel_points,
-                   0.024 if lane != 1 else 0.028, vessel_wall_mat, 12)
+        vessel = curve_tube("V58_Embedded_Xylem_Vessel", vessel_points,
+                            (0.020, 0.029, 0.023)[lane], vessel_wall_mat, 12)
+        # Uneven radii and gentle bends keep the vessels organic rather than
+        # three identical straight blue bars.
+        for point, radius in zip(vessel.data.splines[0].bezier_points,
+                                 (0.78, 1.12, 0.88, 1.04)):
+            point.radius = radius
         highlight_points = [
-            (px - 0.012, py - 0.012, pz)
+            (px - 0.010, py - 0.012, pz)
             for px, py, pz in vessel_points
         ]
         curve_tube("V58_Xylem_Vessel_Highlight", highlight_points,
-                   0.0045, vessel_edge_mat, 8)
+                   0.0035, vessel_edge_mat, 8)
 
-        # Short separated water pulses move upward through each vessel;
-        # avoid a solid glowing rod that would hide the lumen.
+        # Distinct bright droplets travel upward with staggered timing.
         for i in range(5):
             drop = uv(
                 "V58_Ascending_Water_Droplet",
                 (x, y - 0.030, 2.90),
-                (0.009, 0.010, 0.024), rising_water_mat, 16, 10
+                (0.008, 0.009, 0.034), rising_water_mat, 16, 10
             )
-            z0 = 2.91 + i * 0.27 + lane * 0.07
-            for frame, zz in ((275, z0), (END, min(z0 + 0.78, 4.48))):
-                drop.location = (x + sway * math.sin(zz * 2.0), y - 0.032, zz)
+            z0 = 2.86 + i * 0.25 + lane * 0.09
+            start_frame = 250 + i * 5 + lane * 3
+            end_frame = min(END, start_frame + 105)
+            for frame, zz in ((start_frame, z0),
+                              (end_frame, min(z0 + 1.02, 4.52))):
+                drop.location = (
+                    x + sway * math.sin(zz * 2.1),
+                    y - 0.036,
+                    zz
+                )
                 drop.keyframe_insert(data_path="location", frame=frame)
 
-    # Fade the carved window in across the approach instead of popping it on.
+    # Reveal the new xylem bed during the approach; old circular-mouth geometry is retired before the macro shot.
     v58_prefixes = (
         "V58_Recessed_Wood_Bed", "V58_Carved_Bark_Edge",
         "V58_Recessed_Wood_Grain", "V58_Embedded_Xylem_Vessel",
@@ -738,9 +749,9 @@ def main():
     for obj in list(bpy.data.objects):
         if obj.name.startswith(legacy_final_hide):
             obj.hide_render = False
-            obj.keyframe_insert(data_path="hide_render", frame=274)
+            obj.keyframe_insert(data_path="hide_render", frame=209)
             obj.hide_render = True
-            obj.keyframe_insert(data_path="hide_render", frame=275)
+            obj.keyframe_insert(data_path="hide_render", frame=210)
 
     # No floating 3D labels: clean, synchronized captions will be composited later.
 
