@@ -94,7 +94,8 @@ def main():
     out=output_path()
     bpy.ops.object.select_all(action="SELECT"); bpy.ops.object.delete(use_global=False)
     scene=bpy.context.scene
-    scene.render.engine="BLENDER_EEVEE_NEXT"
+    engines={e.identifier for e in scene.render.bl_rna.properties["engine"].enum_items}
+    scene.render.engine="BLENDER_EEVEE_NEXT" if "BLENDER_EEVEE_NEXT" in engines else ("BLENDER_EEVEE" if "BLENDER_EEVEE" in engines else "CYCLES")
     scene.render.resolution_x=720; scene.render.resolution_y=1280; scene.render.resolution_percentage=100
     scene.render.fps=FPS; scene.frame_start=1; scene.frame_end=END
     scene.render.image_settings.file_format="FFMPEG"; scene.render.ffmpeg.format="MPEG4"; scene.render.ffmpeg.codec="H264"
