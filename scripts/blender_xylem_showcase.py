@@ -653,7 +653,9 @@ def main():
             u = col / (cols - 1) * 2.0 - 1.0
             waviness = 0.006 * math.sin(row * 0.47 + col * 0.31)
             x = edge * u + waviness * abs(u)
-            y = -math.sqrt(max(0.025, trunk_radius * trunk_radius - x * x)) + 0.125
+            # V66: put the wood bed just in front of the trunk surface.
+            # The recessed V65 bed was hidden by the trunk in the final view.
+            y = -math.sqrt(max(0.025, trunk_radius * trunk_radius - x * x)) - 0.025
             z_irregular = z + 0.008 * math.sin(col * 0.63 + row * 0.29) * (abs(u) ** 2)
             patch_verts.append((x, y, z_irregular))
     for row in range(rows - 1):
@@ -716,18 +718,18 @@ def main():
         [(-0.005,2.80),(0.018,3.06),(-0.012,3.32),(0.026,3.61),(0.004,3.93),(0.035,4.47)],
         [(0.205,2.82),(0.174,3.08),(0.213,3.35),(0.182,3.63),(0.224,3.96),(0.190,4.44)]
     ]
-    vessel_radii = (0.013, 0.017, 0.012)
+    # V66: wider dark lumens so the xylem reads clearly at phone size.
+    vessel_radii = (0.026, 0.031, 0.024)
     for lane, path_points in enumerate(vessel_paths):
         vessel_points = []
         water_points = []
         for index, (px, pz) in enumerate(path_points):
             surface_y = -math.sqrt(max(0.025, trunk_radius * trunk_radius - px * px))
-            # Seat the dark vessel wall almost flush with the recessed wood bed.
-            # The water core sits just inside its front-facing opening.
-            vessel_y = surface_y + 0.119 + 0.0035 * math.sin(index * 1.7 + lane)
+            # V66: bring the vessel wall forward of the wood bed.
+            vessel_y = surface_y - 0.043 + 0.0035 * math.sin(index * 1.7 + lane)
             vessel_points.append((px, vessel_y, pz))
             water_points.append((px + 0.0015 * math.sin(index + lane),
-                                 vessel_y - 0.0035, pz))
+                                 vessel_y - 0.010, pz))
         vessel = curve_tube("V58_Embedded_Xylem_Vessel", vessel_points,
                             vessel_radii[lane], vessel_wall_mat, 12)
         for point, radius in zip(vessel.data.splines[0].bezier_points,
@@ -736,8 +738,8 @@ def main():
 
         # A very fine, broken-looking water core stays inside each dark lumen.
         water_core = curve_tube("V63_Xylem_Water_Core", water_points,
-                                0.0038 if lane != 1 else 0.0045,
-                                rising_water_mat, 8)
+                                0.010 if lane != 1 else 0.013,
+                                rising_water_mat, 10)
         for point, radius in zip(water_core.data.splines[0].bezier_points,
                                  (0.55, 0.90, 0.72, 1.0, 0.68, 0.52)):
             point.radius = radius
@@ -747,7 +749,7 @@ def main():
             drop = uv(
                 "V58_Ascending_Water_Droplet",
                 (path_points[0][0], water_points[0][1] - 0.004, 2.9),
-                (0.012, 0.012, 0.040 + 0.004 * ((i + lane) % 2)),
+                (0.020, 0.020, 0.060 + 0.008 * ((i + lane) % 2)),
                 rising_water_mat, 16, 10
             )
             z0 = 2.88 + i * 0.31 + lane * 0.12
@@ -759,7 +761,8 @@ def main():
                 zz = min(z0 + 0.76, 4.52) if progress else z0
                 xx = x0 + (x1 - x0) * progress + 0.012 * math.sin(zz * 3.0 + lane)
                 surface_y = -math.sqrt(max(0.025, trunk_radius * trunk_radius - xx * xx))
-                drop.location = (xx, surface_y + 0.119, zz)
+                # Keep animated droplets in front of the visible vessel.
+                drop.location = (xx, surface_y - 0.062, zz)
                 drop.keyframe_insert(data_path="location", frame=frame)
 
     # V62: overlap the natural wood bed with the retirement of legacy geometry.
