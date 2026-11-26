@@ -579,10 +579,17 @@ def main():
             )
             particle.keyframe_insert(data_path="location", frame=frame)
 
-    # V60: refine the organic xylem reveal and remove the old circular-mouth look earlier.
-    # The old circular boolean opening is covered by the inset wood surface;
-    # the surrounding bark remains the real trunk mesh, not a floating panel.
-    cutaway_wood_mat = material("V58_Recessed_Trunk_Wood", (0.48, 0.275, 0.135), 0.76)
+    # V61: let the final macro reveal read as exposed trunk wood, not a striped insert.
+    # Preserve the ridges during the establishing shot, then retire them before
+    # the macro reveal so they cannot cross or frame the exposed wood like bars.
+    for obj in bpy.data.objects:
+        if obj.name.startswith("Bark_Ridge"):
+            obj.hide_render = False
+            obj.keyframe_insert(data_path="hide_render", frame=209)
+            obj.hide_render = True
+            obj.keyframe_insert(data_path="hide_render", frame=210)
+
+    cutaway_wood_mat = material("V58_Recessed_Trunk_Wood", (0.39, 0.205, 0.092), 0.82)
     cutaway_grain_mat = material("V58_Wood_Grain", (0.25, 0.125, 0.055), 0.84)
     cut_edge_mat = material("V58_Fresh_Cut_Edge", (0.34, 0.19, 0.095), 0.82)
     vessel_wall_mat = material("V58_Xylem_Vessel_Walls", (0.012, 0.075, 0.09), 0.46)
@@ -655,8 +662,21 @@ def main():
             edge_pts.append((x, y, z))
         curve_tube("V58_Carved_Bark_Edge", edge_pts, 0.014, cut_edge_mat, 10)
 
-    # Grain is embedded in the inset wood. Three unequal, gently wandering
-    # vessels sit within the wood bed, not on top of a bright rectangular card.
+    # V61: irregular low-contrast grain runs through the exposed wood itself.
+    # These are shallow, curved lines with varied lengths and spacing, not bars.
+    for i, x0 in enumerate((-0.265, -0.205, -0.115, -0.035, 0.085, 0.165, 0.255)):
+        pts = []
+        z0 = 2.82 + (i % 3) * 0.055
+        z1 = 4.42 - ((i + 1) % 3) * 0.07
+        for j in range(9):
+            t = j / 8.0
+            z = z0 + (z1 - z0) * t
+            x = x0 + 0.014 * math.sin(t * 8.0 + i * 1.7) + 0.006 * math.sin(t * 17.0 + i)
+            yy = -math.sqrt(max(0.025, trunk_radius * trunk_radius - x * x)) + 0.092
+            pts.append((x, yy, z))
+        curve_tube("V61_Exposed_Wood_Grain", pts, 0.0022, cutaway_grain_mat, 6)
+
+    # Fine grain continues along the natural wood around the opening.
     for side in (-1, 1):
         for offset in (0.0, 0.075, 0.145):
             x0 = side * (0.235 + offset)
@@ -678,7 +698,7 @@ def main():
             (x + sway * 0.65, y - 0.004, 4.43)
         ]
         vessel = curve_tube("V58_Embedded_Xylem_Vessel", vessel_points,
-                            (0.020, 0.029, 0.023)[lane], vessel_wall_mat, 12)
+                            (0.014, 0.020, 0.016)[lane], vessel_wall_mat, 12)
         # Uneven radii and gentle bends keep the vessels organic rather than
         # three identical straight blue bars.
         for point, radius in zip(vessel.data.splines[0].bezier_points,
@@ -689,7 +709,7 @@ def main():
             for px, py, pz in vessel_points
         ]
         curve_tube("V58_Xylem_Vessel_Highlight", highlight_points,
-                   0.0035, vessel_edge_mat, 8)
+                   0.0020, vessel_edge_mat, 6)
 
         # Distinct bright droplets travel upward with staggered timing.
         for i in range(5):
@@ -713,7 +733,8 @@ def main():
     # Reveal the new xylem bed during the approach; old circular-mouth geometry is retired before the macro shot.
     v58_prefixes = (
         "V58_Recessed_Wood_Bed", "V58_Carved_Bark_Edge",
-        "V58_Recessed_Wood_Grain", "V58_Embedded_Xylem_Vessel",
+        "V58_Recessed_Wood_Grain", "V61_Exposed_Wood_Grain",
+        "V58_Embedded_Xylem_Vessel",
         "V58_Xylem_Vessel_Highlight", "V58_Ascending_Water_Droplet"
     )
     for obj in list(bpy.data.objects):
