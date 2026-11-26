@@ -589,7 +589,7 @@ def main():
             )
             particle.keyframe_insert(data_path="location", frame=frame)
 
-    # V58: carve a recessed, irregular vertical window into the actual trunk.
+    # V59: carve an organic, tapered xylem window into the trunk into the actual trunk.
     # The old circular boolean opening is covered by the inset wood surface;
     # the surrounding bark remains the real trunk mesh, not a floating panel.
     cutaway_wood_mat = material("V58_Recessed_Trunk_Wood", (0.48, 0.275, 0.135), 0.76)
@@ -604,16 +604,14 @@ def main():
 
     # Rounded, slightly uneven cutter removes the bark and front wood to form
     # a real shallow cavity. Its rear face stops inside the trunk.
-    bpy.ops.mesh.primitive_cube_add(size=1, location=(0.0, -0.405, 3.63))
+    bpy.ops.mesh.primitive_uv_sphere_add(
+        segments=48, ring_count=32, radius=1,
+        location=(0.0, -0.405, 3.63)
+    )
     v58_cutter = bpy.context.object
     v58_cutter.name = "V58_Temporary_Cutaway_Cutter"
-    v58_cutter.dimensions = (0.76, 0.61, 2.16)
+    v58_cutter.scale = (0.385, 0.66, 1.12)
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    cutter_bevel = v58_cutter.modifiers.new("V58_Rounded_Cut_Corners", "BEVEL")
-    cutter_bevel.width = 0.075
-    cutter_bevel.segments = 5
-    bpy.context.view_layer.objects.active = v58_cutter
-    bpy.ops.object.modifier_apply(modifier=cutter_bevel.name)
     trunk_cut = trunk.modifiers.new("V58_Carved_Trunk_Window", "BOOLEAN")
     trunk_cut.operation = "DIFFERENCE"
     trunk_cut.solver = "EXACT"
@@ -626,17 +624,20 @@ def main():
     # the old round passage. Its outline varies subtly so it reads as wood.
     patch_verts = []
     patch_faces = []
-    rows, cols = 25, 17
+    rows, cols = 37, 21
     for row in range(rows):
         t = row / (rows - 1)
         z = z_bottom + (z_top - z_bottom) * t
-        edge = 0.345 + 0.018 * math.sin(t * math.pi * 2.0)
+        # An elongated, tapered botanical window rather than a rectangular insert.
+        taper = max(0.035, math.sin(math.pi * t) ** 0.48)
+        edge = 0.355 * taper * (1.0 + 0.045 * math.sin(t * math.tau * 2.0))
         for col in range(cols):
             u = col / (cols - 1) * 2.0 - 1.0
-            x = edge * u + 0.008 * math.sin(row * 0.63 + col * 0.51) * abs(u)
-            # Inset from the original bark surface; follows the trunk curvature.
-            y = -math.sqrt(max(0.025, trunk_radius * trunk_radius - x * x)) + 0.135
-            z_irregular = z + 0.009 * math.sin(col * 0.74 + row * 0.31) * (abs(u) ** 3)
+            waviness = 0.010 * math.sin(row * 0.57 + col * 0.42)
+            x = edge * u + waviness * abs(u)
+            # The wood bed follows the trunk's curvature and sits inside the bark.
+            y = -math.sqrt(max(0.025, trunk_radius * trunk_radius - x * x)) + 0.125
+            z_irregular = z + 0.012 * math.sin(col * 0.63 + row * 0.29) * (abs(u) ** 2)
             patch_verts.append((x, y, z_irregular))
     for row in range(rows - 1):
         for col in range(cols - 1):
@@ -656,8 +657,10 @@ def main():
     # Thin dark cut-edge accents sit just inside the bark boundary.
     for side in (-1, 1):
         edge_pts = []
-        for z in (2.68, 3.05, 3.48, 3.92, 4.35, 4.58):
-            x = side * (0.342 + 0.012 * math.sin(z * 3.2))
+        for z in (2.72, 2.96, 3.28, 3.62, 3.96, 4.28, 4.54):
+            t = (z - z_bottom) / (z_top - z_bottom)
+            width = 0.355 * max(0.035, math.sin(math.pi * t) ** 0.48)
+            x = side * (width + 0.010 * math.sin(z * 3.2))
             y = -math.sqrt(max(0.025, trunk_radius * trunk_radius - x * x)) - 0.012
             edge_pts.append((x, y, z))
         curve_tube("V58_Carved_Bark_Edge", edge_pts, 0.014, cut_edge_mat, 10)
@@ -685,7 +688,7 @@ def main():
             (x + sway * 0.35, y, 4.43)
         ]
         curve_tube("V58_Embedded_Xylem_Vessel", vessel_points,
-                   0.031 if lane != 1 else 0.036, vessel_wall_mat, 12)
+                   0.024 if lane != 1 else 0.028, vessel_wall_mat, 12)
         highlight_points = [
             (px - 0.012, py - 0.012, pz)
             for px, py, pz in vessel_points
