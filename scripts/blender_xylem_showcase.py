@@ -589,101 +589,102 @@ def main():
             )
             particle.keyframe_insert(data_path="location", frame=frame)
 
-    # V54: replace the circular vessel mouth with a front-facing vertical wood cutaway.
-    # The cutaway is layered directly in front of the trunk: wood cheeks frame
-    # a recessed teal channel, while a bright stream and separate droplets rise
-    # along world Z. This keeps the educational flow readable in portrait view.
-    cutaway_wood_mat = material("V54_Exposed_Cutaway_Wood", (0.72, 0.47, 0.24), 0.62)
-    cutaway_grain_mat = material("V54_Wood_Grain", (0.43, 0.25, 0.12), 0.78)
-    channel_back_mat = material("V54_Recessed_Xylem_Channel", (0.018, 0.105, 0.14), 0.48)
-    channel_edge_mat = material("V54_Channel_Edge", (0.20, 0.52, 0.49), 0.38)
-    side_water_mat = emissive("V54_Upward_Water", (0.025, 0.58, 1.0), 2.4)
+    # V57: expose a broad, organic section of the trunk and show several
+    # narrow xylem vessels embedded in the wood. The curved patch follows the
+    # trunk surface, so it reads as a cutaway in the tree rather than an insert.
+    cutaway_wood_mat = material("V57_Exposed_Trunk_Wood", (0.72, 0.47, 0.24), 0.66)
+    cutaway_grain_mat = material("V57_Wood_Grain", (0.40, 0.23, 0.11), 0.78)
+    vessel_wall_mat = material("V57_Xylem_Vessel_Walls", (0.018, 0.12, 0.16), 0.42)
+    vessel_edge_mat = material("V57_Xylem_Rim", (0.12, 0.43, 0.43), 0.42)
+    rising_water_mat = emissive("V57_Rising_Water", (0.025, 0.62, 1.0), 2.0)
 
-    v54_bottom, v54_top = 2.70, 4.64
-    v54_mid = (v54_bottom + v54_top) * 0.5
+    trunk_radius = 0.466
+    z_bottom, z_top = 2.58, 4.68
+    rows, cols = 19, 13
+    patch_verts = []
+    patch_faces = []
+    for row in range(rows):
+        t = row / (rows - 1)
+        z = z_bottom + (z_top - z_bottom) * t
+        half_width = 0.405 * (0.84 + 0.16 * math.sin(math.pi * t))
+        for col in range(cols):
+            u = col / (cols - 1) * 2.0 - 1.0
+            x = half_width * u
+            # Slightly irregular cut edges, but a smooth curved face matching
+            # the cylindrical trunk rather than a flat rectangular board.
+            x += 0.010 * math.sin(row * 0.83 + col * 0.61) * (abs(u) ** 2)
+            y = -math.sqrt(max(0.02, trunk_radius * trunk_radius - x * x)) - 0.018
+            patch_verts.append((x, y, z + 0.012 * math.sin(col * 0.8 + row * 0.27)))
+    for row in range(rows - 1):
+        for col in range(cols - 1):
+            a = row * cols + col
+            patch_faces.append((a, a + 1, a + 1 + cols, a + cols))
+    patch_mesh = bpy.data.meshes.new("V57_Organic_Trunk_Cutaway_Mesh")
+    patch_mesh.from_pydata(patch_verts, [], patch_faces)
+    patch_mesh.materials.append(cutaway_wood_mat)
+    patch = bpy.data.objects.new("V57_Organic_Trunk_Cutaway", patch_mesh)
+    bpy.context.collection.objects.link(patch)
+    solidify = patch.modifiers.new("V57_Cutaway_Thickness", "SOLIDIFY")
+    solidify.thickness = 0.025
+    bevel = patch.modifiers.new("V57_Soft_Cut_Edges", "BEVEL")
+    bevel.width = 0.012
+    bevel.segments = 3
 
-    # V56: let the actual trunk remain the broad wood surface. Avoid a
-    # floating rectangular slab; the exposed xylem is a narrow, organic
-    # incision integrated into the bark instead of a box attached to it.
-
-    # Recessed open channel: no enclosing tube and no circular entrance.
-    bpy.ops.mesh.primitive_cube_add(size=1, location=(0.0, -0.525, v54_mid))
-    channel_back = bpy.context.object
-    channel_back.name = "V54_Open_Xylem_Channel_Back"
-    channel_back.dimensions = (0.255, 0.018, 1.76)
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    apply_mat(channel_back, channel_back_mat)
-    back_bevel = channel_back.modifiers.new("V54_Channel_Soft_Edges", "BEVEL")
-    back_bevel.width = 0.008
-    back_bevel.segments = 4
-
-    # V56: slim irregular cut edges follow the trunk's curved front face.
-    # They suggest exposed wood fibres without bulky rectangular side blocks.
+    # Fine grain follows the broad exposed wood, leaving the vessel lanes clear.
     for side in (-1, 1):
-        x = side * 0.158
-        edge = curve_tube(
-            "V54_Vertical_Channel_Edge",
-            [(x * 1.10, -0.555, v54_bottom + 0.14),
-             (x * 0.98, -0.585, 3.18),
-             (x, -0.592, 3.62),
-             (x * 0.94, -0.565, v54_top - 0.14)],
-            0.038, cutaway_wood_mat, 12
-        )
-        inner = curve_tube(
-            "V56_Exposed_Xylem_Rim",
-            [(side * 0.125, -0.603, v54_bottom + 0.16),
-             (side * 0.125, -0.612, v54_mid),
-             (side * 0.125, -0.603, v54_top - 0.16)],
-            0.012, channel_edge_mat, 10
-        )
+        for offset in (0.0, 0.075, 0.15):
+            x = side * (0.285 + offset)
+            pts = []
+            for z in (2.78, 3.18, 3.62, 4.05, 4.48):
+                xx = x + 0.012 * math.sin(z * 3.1 + offset * 8.0)
+                yy = -math.sqrt(max(0.02, trunk_radius * trunk_radius - xx * xx)) - 0.035
+                pts.append((xx, yy, z))
+            curve_tube("V57_Exposed_Wood_Grain", pts, 0.0045, cutaway_grain_mat, 8)
 
-    # A few fine grain lines stop short of the channel, reinforcing the wood
-    # cross-section without drawing bars across the moving water.
-    for x in (-0.34, -0.28, 0.28, 0.34):
-        curve_tube(
-            "V54_Cutaway_Wood_Grain",
-            [(x, -0.505, 2.82), (x * 0.98, -0.535, 3.18),
-             (x * 0.96, -0.535, 3.48)],
-            0.005, cutaway_grain_mat, 8
+    # Three separate vessels sit within the exposed wood. Their dark lumen,
+    # subtle teal rim and slim travelling water pulses make the upward flow
+    # readable without turning the cutaway into a glowing rectangular corridor.
+    vessel_x_positions = (-0.19, 0.0, 0.19)
+    for lane, x in enumerate(vessel_x_positions):
+        y = -math.sqrt(max(0.02, trunk_radius * trunk_radius - x * x)) - 0.050
+        vessel = curve_tube(
+            "V57_Embedded_Xylem_Vessel",
+            [(x, y, 2.82), (x + 0.006, y - 0.004, 3.32),
+             (x - 0.004, y - 0.004, 3.86), (x, y, 4.43)],
+            0.047 if lane == 1 else 0.039, vessel_wall_mat, 12
         )
         curve_tube(
-            "V54_Cutaway_Wood_Grain",
-            [(x * 0.96, -0.535, 3.88), (x * 0.98, -0.535, 4.18),
-             (x, -0.505, 4.50)],
-            0.005, cutaway_grain_mat, 8
+            "V57_Xylem_Vessel_Highlight",
+            [(x - 0.018, y - 0.014, 2.88),
+             (x - 0.012, y - 0.018, 3.48),
+             (x - 0.016, y - 0.014, 4.36)],
+            0.006, vessel_edge_mat, 8
         )
-
-    # The stream and individual droplets travel upward through the exposed
-    # channel, with staggered motion so the direction is immediately legible.
-    stream = curve_tube(
-        "V54_Continuous_Upward_Water_Stream",
-        [(0.0, -0.650, v54_bottom + 0.10),
-         (0.0, -0.650, 3.22),
-         (0.0, -0.650, 3.78),
-         (0.0, -0.650, v54_top - 0.10)],
-        0.020, side_water_mat, 12
-    )
-    for i in range(9):
-        drop = uv(
-            "V54_Ascending_Water_Droplet",
-            (0.0, -0.685, 2.82),
-            (0.017, 0.017, 0.043),
-            side_water_mat, 24, 16
+        flow = curve_tube(
+            "V57_Upward_Water_Core",
+            [(x, y - 0.055, 2.94), (x, y - 0.055, 3.42),
+             (x, y - 0.055, 3.92), (x, y - 0.055, 4.34)],
+            0.010, rising_water_mat, 10
         )
-        x_offset = (-0.038, 0.0, 0.038)[i % 3]
-        z0 = 2.82 + i * 0.145
-        for frame, zz in ((275, z0), (END, min(z0 + 1.05, v54_top - 0.12))):
-            drop.location = (x_offset, -0.685, zz)
-            drop.keyframe_insert(data_path="location", frame=frame)
+        for i in range(4):
+            drop = uv(
+                "V57_Ascending_Water_Droplet",
+                (x, y - 0.075, 2.95),
+                (0.012, 0.012, 0.030), rising_water_mat, 20, 12
+            )
+            z0 = 2.92 + i * 0.34 + lane * 0.11
+            for frame, zz in ((275, z0), (END, min(z0 + 0.92, 4.52))):
+                drop.location = (x, y - 0.078, zz)
+                drop.keyframe_insert(data_path="location", frame=frame)
 
-    # All V54 cutaway elements appear together at the final macro reveal.
-    v54_prefixes = (
-        "V54_Open_Xylem_Channel_Back", "V54_Vertical_Channel_Edge",
-        "V56_Exposed_Xylem_Rim", "V54_Cutaway_Wood_Grain",
-        "V54_Continuous_Upward_Water_Stream", "V54_Ascending_Water_Droplet"
+    # Reveal the integrated cutaway and water only at the macro section.
+    v57_prefixes = (
+        "V57_Organic_Trunk_Cutaway", "V57_Exposed_Wood_Grain",
+        "V57_Embedded_Xylem_Vessel", "V57_Xylem_Vessel_Highlight",
+        "V57_Upward_Water_Core", "V57_Ascending_Water_Droplet"
     )
     for obj in list(bpy.data.objects):
-        if obj.name.startswith(v54_prefixes):
+        if obj.name.startswith(v57_prefixes):
             obj.hide_render = True
             obj.keyframe_insert(data_path="hide_render", frame=274)
             obj.hide_render = False
