@@ -602,98 +602,85 @@ def main():
     v54_bottom, v54_top = 2.70, 4.64
     v54_mid = (v54_bottom + v54_top) * 0.5
 
-    # A shallow wood slab sits just proud of the trunk, replacing the old
-    # circular lip in the macro view with a clearly longitudinal section.
-    bpy.ops.mesh.primitive_cube_add(size=1, location=(0.0, -0.615, v54_mid))
-    wood_slab = bpy.context.object
-    wood_slab.name = "V54_Front_Cutaway_Wood_Slab"
-    wood_slab.dimensions = (0.88, 0.105, 2.08)
-    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-    apply_mat(wood_slab, cutaway_wood_mat)
-    slab_bevel = wood_slab.modifiers.new("V54_Soft_Wood_Edges", "BEVEL")
-    slab_bevel.width = 0.075
-    slab_bevel.segments = 5
-    wood_slab.modifiers.new("V54_Wood_Normals", "WEIGHTED_NORMAL")
+    # V56: let the actual trunk remain the broad wood surface. Avoid a
+    # floating rectangular slab; the exposed xylem is a narrow, organic
+    # incision integrated into the bark instead of a box attached to it.
 
     # Recessed open channel: no enclosing tube and no circular entrance.
-    bpy.ops.mesh.primitive_cube_add(size=1, location=(0.0, -0.681, v54_mid))
+    bpy.ops.mesh.primitive_cube_add(size=1, location=(0.0, -0.525, v54_mid))
     channel_back = bpy.context.object
     channel_back.name = "V54_Open_Xylem_Channel_Back"
-    channel_back.dimensions = (0.315, 0.025, 1.82)
+    channel_back.dimensions = (0.255, 0.018, 1.76)
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
     apply_mat(channel_back, channel_back_mat)
     back_bevel = channel_back.modifiers.new("V54_Channel_Soft_Edges", "BEVEL")
     back_bevel.width = 0.035
     back_bevel.segments = 4
 
-    # Raised wood cheeks and slim teal cut edges give the channel depth.
+    # V56: slim irregular cut edges follow the trunk's curved front face.
+    # They suggest exposed wood fibres without bulky rectangular side blocks.
     for side in (-1, 1):
-        bpy.ops.mesh.primitive_cube_add(
-            size=1, location=(side * 0.265, -0.735, v54_mid)
-        )
-        cheek = bpy.context.object
-        cheek.name = "V54_Wood_Cutaway_Cheek"
-        cheek.dimensions = (0.19, 0.13, 1.98)
-        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
-        apply_mat(cheek, cutaway_wood_mat)
-        bevel = cheek.modifiers.new("V54_Cheek_Rounded_Edges", "BEVEL")
-        bevel.width = 0.045
-        bevel.segments = 4
-        cheek.modifiers.new("V54_Cheek_Normals", "WEIGHTED_NORMAL")
-
+        x = side * 0.158
         edge = curve_tube(
             "V54_Vertical_Channel_Edge",
-            [(side * 0.158, -0.765, v54_bottom + 0.12),
-             (side * 0.158, -0.765, v54_mid),
-             (side * 0.158, -0.765, v54_top - 0.12)],
-            0.018, channel_edge_mat, 10
+            [(x * 1.10, -0.555, v54_bottom + 0.14),
+             (x * 0.98, -0.585, 3.18),
+             (x, -0.592, 3.62),
+             (x * 0.94, -0.565, v54_top - 0.14)],
+            0.038, cutaway_wood_mat, 12
+        )
+        inner = curve_tube(
+            "V56_Exposed_Xylem_Rim",
+            [(side * 0.125, -0.603, v54_bottom + 0.16),
+             (side * 0.125, -0.612, v54_mid),
+             (side * 0.125, -0.603, v54_top - 0.16)],
+            0.012, channel_edge_mat, 10
         )
 
     # A few fine grain lines stop short of the channel, reinforcing the wood
     # cross-section without drawing bars across the moving water.
-    for x in (-0.36, -0.30, 0.30, 0.36):
+    for x in (-0.34, -0.28, 0.28, 0.34):
         curve_tube(
             "V54_Cutaway_Wood_Grain",
-            [(x, -0.678, 2.82), (x * 0.98, -0.682, 3.18),
-             (x * 0.96, -0.682, 3.48)],
-            0.006, cutaway_grain_mat, 8
+            [(x, -0.505, 2.82), (x * 0.98, -0.535, 3.18),
+             (x * 0.96, -0.535, 3.48)],
+            0.005, cutaway_grain_mat, 8
         )
         curve_tube(
             "V54_Cutaway_Wood_Grain",
-            [(x * 0.96, -0.682, 3.88), (x * 0.98, -0.682, 4.18),
-             (x, -0.678, 4.50)],
-            0.006, cutaway_grain_mat, 8
+            [(x * 0.96, -0.535, 3.88), (x * 0.98, -0.535, 4.18),
+             (x, -0.505, 4.50)],
+            0.005, cutaway_grain_mat, 8
         )
 
     # The stream and individual droplets travel upward through the exposed
     # channel, with staggered motion so the direction is immediately legible.
     stream = curve_tube(
         "V54_Continuous_Upward_Water_Stream",
-        [(0.0, -0.785, v54_bottom + 0.10),
-         (0.0, -0.785, 3.22),
-         (0.0, -0.785, 3.78),
-         (0.0, -0.785, v54_top - 0.10)],
-        0.024, side_water_mat, 12
+        [(0.0, -0.650, v54_bottom + 0.10),
+         (0.0, -0.650, 3.22),
+         (0.0, -0.650, 3.78),
+         (0.0, -0.650, v54_top - 0.10)],
+        0.020, side_water_mat, 12
     )
-    for i in range(8):
+    for i in range(9):
         drop = uv(
             "V54_Ascending_Water_Droplet",
-            (0.0, -0.825, 2.82),
-            (0.022, 0.022, 0.052),
+            (0.0, -0.685, 2.82),
+            (0.017, 0.017, 0.043),
             side_water_mat, 24, 16
         )
-        x_offset = (-0.045, 0.0, 0.045)[i % 3]
-        z0 = 2.84 + i * 0.17
-        for frame, zz in ((275, z0), (END, min(z0 + 0.82, v54_top - 0.13))):
-            drop.location = (x_offset, -0.825, zz)
+        x_offset = (-0.038, 0.0, 0.038)[i % 3]
+        z0 = 2.82 + i * 0.145
+        for frame, zz in ((275, z0), (END, min(z0 + 1.05, v54_top - 0.12))):
+            drop.location = (x_offset, -0.685, zz)
             drop.keyframe_insert(data_path="location", frame=frame)
 
     # All V54 cutaway elements appear together at the final macro reveal.
     v54_prefixes = (
-        "V54_Front_Cutaway_Wood_Slab", "V54_Open_Xylem_Channel_Back",
-        "V54_Wood_Cutaway_Cheek", "V54_Vertical_Channel_Edge",
-        "V54_Cutaway_Wood_Grain", "V54_Continuous_Upward_Water_Stream",
-        "V54_Ascending_Water_Droplet"
+        "V54_Open_Xylem_Channel_Back", "V54_Vertical_Channel_Edge",
+        "V56_Exposed_Xylem_Rim", "V54_Cutaway_Wood_Grain",
+        "V54_Continuous_Upward_Water_Stream", "V54_Ascending_Water_Droplet"
     )
     for obj in list(bpy.data.objects):
         if obj.name.startswith(v54_prefixes):
