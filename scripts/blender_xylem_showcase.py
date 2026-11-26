@@ -589,106 +589,135 @@ def main():
             )
             particle.keyframe_insert(data_path="location", frame=frame)
 
-    # V57: expose a broad, organic section of the trunk and show several
-    # narrow xylem vessels embedded in the wood. The curved patch follows the
-    # trunk surface, so it reads as a cutaway in the tree rather than an insert.
-    cutaway_wood_mat = material("V57_Exposed_Trunk_Wood", (0.72, 0.47, 0.24), 0.66)
-    cutaway_grain_mat = material("V57_Wood_Grain", (0.40, 0.23, 0.11), 0.78)
-    vessel_wall_mat = material("V57_Xylem_Vessel_Walls", (0.018, 0.12, 0.16), 0.42)
-    vessel_edge_mat = material("V57_Xylem_Rim", (0.12, 0.43, 0.43), 0.42)
-    rising_water_mat = emissive("V57_Rising_Water", (0.025, 0.62, 1.0), 2.0)
+    # V58: carve a recessed, irregular vertical window into the actual trunk.
+    # The old circular boolean opening is covered by the inset wood surface;
+    # the surrounding bark remains the real trunk mesh, not a floating panel.
+    cutaway_wood_mat = material("V58_Recessed_Trunk_Wood", (0.48, 0.275, 0.135), 0.76)
+    cutaway_grain_mat = material("V58_Wood_Grain", (0.25, 0.125, 0.055), 0.84)
+    cut_edge_mat = material("V58_Fresh_Cut_Edge", (0.34, 0.19, 0.095), 0.82)
+    vessel_wall_mat = material("V58_Xylem_Vessel_Walls", (0.012, 0.075, 0.09), 0.46)
+    vessel_edge_mat = material("V58_Xylem_Rim", (0.055, 0.27, 0.30), 0.48)
+    rising_water_mat = emissive("V58_Rising_Water", (0.025, 0.52, 0.92), 1.45)
 
     trunk_radius = 0.466
-    z_bottom, z_top = 2.58, 4.68
-    rows, cols = 19, 13
+    z_bottom, z_top = 2.57, 4.69
+
+    # Rounded, slightly uneven cutter removes the bark and front wood to form
+    # a real shallow cavity. Its rear face stops inside the trunk.
+    bpy.ops.mesh.primitive_cube_add(size=1, location=(0.0, -0.405, 3.63))
+    v58_cutter = bpy.context.object
+    v58_cutter.name = "V58_Temporary_Cutaway_Cutter"
+    v58_cutter.dimensions = (0.76, 0.61, 2.16)
+    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    cutter_bevel = v58_cutter.modifiers.new("V58_Rounded_Cut_Corners", "BEVEL")
+    cutter_bevel.width = 0.075
+    cutter_bevel.segments = 5
+    bpy.context.view_layer.objects.active = v58_cutter
+    bpy.ops.object.modifier_apply(modifier=cutter_bevel.name)
+    trunk_cut = trunk.modifiers.new("V58_Carved_Trunk_Window", "BOOLEAN")
+    trunk_cut.operation = "DIFFERENCE"
+    trunk_cut.solver = "EXACT"
+    trunk_cut.object = v58_cutter
+    bpy.context.view_layer.objects.active = trunk
+    bpy.ops.object.modifier_apply(modifier=trunk_cut.name)
+    bpy.data.objects.remove(v58_cutter, do_unlink=True)
+
+    # A recessed curved wood bed sits behind the carved bark edge and closes
+    # the old round passage. Its outline varies subtly so it reads as wood.
     patch_verts = []
     patch_faces = []
+    rows, cols = 25, 17
     for row in range(rows):
         t = row / (rows - 1)
         z = z_bottom + (z_top - z_bottom) * t
-        half_width = 0.405 * (0.84 + 0.16 * math.sin(math.pi * t))
+        edge = 0.345 + 0.018 * math.sin(t * math.pi * 2.0)
         for col in range(cols):
             u = col / (cols - 1) * 2.0 - 1.0
-            x = half_width * u
-            # Slightly irregular cut edges, but a smooth curved face matching
-            # the cylindrical trunk rather than a flat rectangular board.
-            x += 0.010 * math.sin(row * 0.83 + col * 0.61) * (abs(u) ** 2)
-            y = -math.sqrt(max(0.02, trunk_radius * trunk_radius - x * x)) - 0.018
-            patch_verts.append((x, y, z + 0.012 * math.sin(col * 0.8 + row * 0.27)))
+            x = edge * u + 0.008 * math.sin(row * 0.63 + col * 0.51) * abs(u)
+            # Inset from the original bark surface; follows the trunk curvature.
+            y = -math.sqrt(max(0.025, trunk_radius * trunk_radius - x * x)) + 0.135
+            z_irregular = z + 0.009 * math.sin(col * 0.74 + row * 0.31) * (abs(u) ** 3)
+            patch_verts.append((x, y, z_irregular))
     for row in range(rows - 1):
         for col in range(cols - 1):
             a = row * cols + col
             patch_faces.append((a, a + 1, a + 1 + cols, a + cols))
-    patch_mesh = bpy.data.meshes.new("V57_Organic_Trunk_Cutaway_Mesh")
+    patch_mesh = bpy.data.meshes.new("V58_Recessed_Wood_Bed_Mesh")
     patch_mesh.from_pydata(patch_verts, [], patch_faces)
     patch_mesh.materials.append(cutaway_wood_mat)
-    patch = bpy.data.objects.new("V57_Organic_Trunk_Cutaway", patch_mesh)
+    patch = bpy.data.objects.new("V58_Recessed_Wood_Bed", patch_mesh)
     bpy.context.collection.objects.link(patch)
-    solidify = patch.modifiers.new("V57_Cutaway_Thickness", "SOLIDIFY")
-    solidify.thickness = 0.025
-    bevel = patch.modifiers.new("V57_Soft_Cut_Edges", "BEVEL")
-    bevel.width = 0.012
-    bevel.segments = 3
+    solidify = patch.modifiers.new("V58_Wood_Bed_Thickness", "SOLIDIFY")
+    solidify.thickness = 0.035
+    bevel = patch.modifiers.new("V58_Soft_Wood_Edges", "BEVEL")
+    bevel.width = 0.008
+    bevel.segments = 2
 
-    # Fine grain follows the broad exposed wood, leaving the vessel lanes clear.
+    # Thin dark cut-edge accents sit just inside the bark boundary.
     for side in (-1, 1):
-        for offset in (0.0, 0.075, 0.15):
-            x = side * (0.285 + offset)
-            pts = []
-            for z in (2.78, 3.18, 3.62, 4.05, 4.48):
-                xx = x + 0.012 * math.sin(z * 3.1 + offset * 8.0)
-                yy = -math.sqrt(max(0.02, trunk_radius * trunk_radius - xx * xx)) - 0.035
-                pts.append((xx, yy, z))
-            curve_tube("V57_Exposed_Wood_Grain", pts, 0.0045, cutaway_grain_mat, 8)
+        edge_pts = []
+        for z in (2.68, 3.05, 3.48, 3.92, 4.35, 4.58):
+            x = side * (0.342 + 0.012 * math.sin(z * 3.2))
+            y = -math.sqrt(max(0.025, trunk_radius * trunk_radius - x * x)) - 0.012
+            edge_pts.append((x, y, z))
+        curve_tube("V58_Carved_Bark_Edge", edge_pts, 0.014, cut_edge_mat, 10)
 
-    # Three separate vessels sit within the exposed wood. Their dark lumen,
-    # subtle teal rim and slim travelling water pulses make the upward flow
-    # readable without turning the cutaway into a glowing rectangular corridor.
-    vessel_x_positions = (-0.19, 0.0, 0.19)
+    # Grain is embedded in the inset wood. Three unequal, gently wandering
+    # vessels sit within the wood bed, not on top of a bright rectangular card.
+    for side in (-1, 1):
+        for offset in (0.0, 0.075, 0.145):
+            x0 = side * (0.235 + offset)
+            pts = []
+            for z in (2.76, 3.16, 3.58, 4.02, 4.46):
+                xx = x0 + 0.012 * math.sin(z * 2.7 + offset * 9.0)
+                yy = -math.sqrt(max(0.025, trunk_radius * trunk_radius - xx * xx)) + 0.105
+                pts.append((xx, yy, z))
+            curve_tube("V58_Recessed_Wood_Grain", pts, 0.004, cutaway_grain_mat, 8)
+
+    vessel_x_positions = (-0.17, 0.015, 0.19)
     for lane, x in enumerate(vessel_x_positions):
-        y = -math.sqrt(max(0.02, trunk_radius * trunk_radius - x * x)) - 0.050
-        vessel = curve_tube(
-            "V57_Embedded_Xylem_Vessel",
-            [(x, y, 2.82), (x + 0.006, y - 0.004, 3.32),
-             (x - 0.004, y - 0.004, 3.86), (x, y, 4.43)],
-            0.047 if lane == 1 else 0.039, vessel_wall_mat, 12
-        )
-        curve_tube(
-            "V57_Xylem_Vessel_Highlight",
-            [(x - 0.018, y - 0.014, 2.88),
-             (x - 0.012, y - 0.018, 3.48),
-             (x - 0.016, y - 0.014, 4.36)],
-            0.006, vessel_edge_mat, 8
-        )
-        flow = curve_tube(
-            "V57_Upward_Water_Core",
-            [(x, y - 0.055, 2.94), (x, y - 0.055, 3.42),
-             (x, y - 0.055, 3.92), (x, y - 0.055, 4.34)],
-            0.010, rising_water_mat, 10
-        )
-        for i in range(4):
+        y = -math.sqrt(max(0.025, trunk_radius * trunk_radius - x * x)) + 0.075
+        sway = 0.012 if lane == 0 else (-0.009 if lane == 2 else 0.004)
+        vessel_points = [
+            (x, y, 2.83),
+            (x + sway, y - 0.006, 3.28),
+            (x - sway * 0.65, y - 0.008, 3.83),
+            (x + sway * 0.35, y, 4.43)
+        ]
+        curve_tube("V58_Embedded_Xylem_Vessel", vessel_points,
+                   0.031 if lane != 1 else 0.036, vessel_wall_mat, 12)
+        highlight_points = [
+            (px - 0.012, py - 0.012, pz)
+            for px, py, pz in vessel_points
+        ]
+        curve_tube("V58_Xylem_Vessel_Highlight", highlight_points,
+                   0.0045, vessel_edge_mat, 8)
+
+        # Short separated water pulses move upward through each vessel;
+        # avoid a solid glowing rod that would hide the lumen.
+        for i in range(5):
             drop = uv(
-                "V57_Ascending_Water_Droplet",
-                (x, y - 0.075, 2.95),
-                (0.012, 0.012, 0.030), rising_water_mat, 20, 12
+                "V58_Ascending_Water_Droplet",
+                (x, y - 0.030, 2.90),
+                (0.009, 0.010, 0.024), rising_water_mat, 16, 10
             )
-            z0 = 2.92 + i * 0.34 + lane * 0.11
-            for frame, zz in ((275, z0), (END, min(z0 + 0.92, 4.52))):
-                drop.location = (x, y - 0.078, zz)
+            z0 = 2.91 + i * 0.27 + lane * 0.07
+            for frame, zz in ((275, z0), (END, min(z0 + 0.78, 4.48))):
+                drop.location = (x + sway * math.sin(zz * 2.0), y - 0.032, zz)
                 drop.keyframe_insert(data_path="location", frame=frame)
 
-    # Reveal the integrated cutaway and water only at the macro section.
-    v57_prefixes = (
-        "V57_Organic_Trunk_Cutaway", "V57_Exposed_Wood_Grain",
-        "V57_Embedded_Xylem_Vessel", "V57_Xylem_Vessel_Highlight",
-        "V57_Upward_Water_Core", "V57_Ascending_Water_Droplet"
+    # Fade the carved window in across the approach instead of popping it on.
+    v58_prefixes = (
+        "V58_Recessed_Wood_Bed", "V58_Carved_Bark_Edge",
+        "V58_Recessed_Wood_Grain", "V58_Embedded_Xylem_Vessel",
+        "V58_Xylem_Vessel_Highlight", "V58_Ascending_Water_Droplet"
     )
     for obj in list(bpy.data.objects):
-        if obj.name.startswith(v57_prefixes):
+        if obj.name.startswith(v58_prefixes):
             obj.hide_render = True
-            obj.keyframe_insert(data_path="hide_render", frame=274)
+            obj.keyframe_insert(data_path="hide_render", frame=250)
             obj.hide_render = False
-            obj.keyframe_insert(data_path="hide_render", frame=275)
+            obj.keyframe_insert(data_path="hide_render", frame=290)
 
     # Hide every legacy circular-mouth component for the final shot. The
     # circular lip, oval shells, old channel connectors and tunnel must not
@@ -700,7 +729,8 @@ def main():
         "Continuous_Vessel_Inner_Wall", "Longitudinal_Vessel_Wall_Seam",
         "Central_Water_Flow", "Helical_Water_Flow_Filament",
         "Travelling_Water_Flow_Streak", "Water_Travel_Pulse",
-        "Water_Travel_Micro_Particle"
+        "Water_Travel_Micro_Particle", "V57_",
+        "V58_Temporary_Cutaway_Cutter"
     )
     for obj in list(bpy.data.objects):
         if obj.name.startswith(legacy_final_hide):
