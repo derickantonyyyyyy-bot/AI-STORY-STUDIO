@@ -646,8 +646,9 @@ def main():
     for row in range(rows):
         t = row / (rows - 1)
         z = z_bottom + (z_top - z_bottom) * t
-        end_round = math.sqrt(max(0.015, 1.0 - abs(2.0*t-1.0)**4))
-        edge = 0.337 * end_round * (1.0 + 0.025 * math.sin(t * math.tau * 2.0))
+        # Rounded-rectangle ends: retain the cutter's broad shoulders even
+        # at the top and bottom so the wood bed fully covers the carved opening.
+        edge = (0.240 + 0.105 * math.sin(math.pi * t) ** 0.45) * (1.0 + 0.025 * math.sin(t * math.tau * 2.0))
         for col in range(cols):
             u = col / (cols - 1) * 2.0 - 1.0
             waviness = 0.006 * math.sin(row * 0.47 + col * 0.31)
