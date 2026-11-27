@@ -85,9 +85,17 @@ def make_rig():
     arm.show_in_front=True
     return arm
 
-def attach(obj, arm, bone):
+def make_controller(name, location, parent=None):
+    bpy.ops.object.empty_add(type="PLAIN_AXES", location=location)
+    e=bpy.context.object; e.name=name
+    if parent:
+        e.parent=parent
+    return e
+
+def attach(obj, controller):
+    # Empty controllers avoid bone-length scaling on child meshes.
     world=obj.matrix_world.copy()
-    obj.parent=arm; obj.parent_type="BONE"; obj.parent_bone=bone
+    obj.parent=controller
     obj.matrix_world=world
 
 def main():
@@ -120,69 +128,79 @@ def main():
     mouth=mat("Mouth",(0.16,0.035,0.035),0.6,0.0)
 
     rig=make_rig()
+    # Stable object-space controllers keep every mesh at its authored size.
+    root_ctrl=make_controller("CTRL_Root",(0,0,0))
+    body_ctrl=make_controller("CTRL_Body",(0,0,1.18),root_ctrl)
+    head_ctrl=make_controller("CTRL_Head",(0,0,2.30),body_ctrl)
+    shoulder_l=make_controller("CTRL_Shoulder_L",(-.36,0,1.98),body_ctrl)
+    elbow_l=make_controller("CTRL_Elbow_L",(-.69,-.005,1.48),shoulder_l)
+    shoulder_r=make_controller("CTRL_Shoulder_R",(.36,0,1.98),body_ctrl)
+    elbow_r=make_controller("CTRL_Elbow_R",(.69,-.005,1.48),shoulder_r)
+    hip_l=make_controller("CTRL_Hip_L",(-.19,0,.84),body_ctrl)
+    hip_r=make_controller("CTRL_Hip_R",(.19,0,.84),body_ctrl)
     # Torso and pelvis
-    torso=uv("TShirt_Torso",(0,0,1.62),(.39,.265,.58),shirt); attach(torso,rig,"spine")
-    pelvis=uv("Trouser_Hips",(0,0,.91),(.34,.25,.27),pants); attach(pelvis,rig,"pelvis")
+    torso=uv("TShirt_Torso",(0,0,1.62),(.34,.235,.51),shirt); attach(torso,body_ctrl)
+    pelvis=uv("Trouser_Hips",(0,0,.91),(.30,.225,.24),pants); attach(pelvis,body_ctrl)
     # Neck and head
-    neck=uv("Neck",(0,0,2.20),(.16,.16,.22),skin); attach(neck,rig,"neck")
-    head=uv("Expressive_Head",(0,-.015,2.70),(.405,.34,.50),skin,48,32); attach(head,rig,"head")
-    haircap=uv("Hair_Cap",(0,.005,3.00),(.445,.365,.30),hair,48,24); attach(haircap,rig,"head")
-    fringe=uv("Hair_Front",(0,-.31,2.96),(.30,.10,.16),hair); attach(fringe,rig,"head")
+    neck=uv("Neck",(0,0,2.20),(.13,.13,.19),skin); attach(neck,body_ctrl)
+    head=uv("Expressive_Head",(0,-.015,2.70),(.36,.31,.44),skin,48,32); attach(head,head_ctrl)
+    haircap=uv("Hair_Cap",(0,.005,2.98),(.385,.33,.245),hair,48,24); attach(haircap,head_ctrl)
+    fringe=uv("Hair_Front",(0,-.285,2.94),(.27,.075,.12),hair); attach(fringe,head_ctrl)
     # Ears
     for side in (-1,1):
-        ear=uv("Ear",(side*.425,-.005,2.69),(.105,.09,.15),skin); attach(ear,rig,"head")
+        ear=uv("Ear",(side*.385,-.005,2.69),(.075,.07,.12),skin); attach(ear,head_ctrl)
     # Face features on the front (-Y)
     for side in (-1,1):
-        eye=uv("Eye_White",(side*.17,-.337,2.77),(.083,.042,.108),white); attach(eye,rig,"head")
-        ir=uv("Iris",(side*.17,-.378,2.765),(.043,.023,.060),iris); attach(ir,rig,"head")
-        pu=uv("Pupil",(side*.17,-.399,2.765),(.021,.012,.035),black); attach(pu,rig,"head")
-        gl=uv("Eye_Glint",(side*.185,-.412,2.795),(.010,.007,.014),white); attach(gl,rig,"head")
-        brow_obj=curve("Eyebrow",[(side*.08,-.355,2.94),(side*.17,-.37,2.97),(side*.27,-.35,2.94)],.021,brow)
-        attach(brow_obj,rig,"head")
+        eye=uv("Eye_White",(side*.145,-.300,2.78),(.070,.035,.090),white); attach(eye,head_ctrl)
+        ir=uv("Iris",(side*.145,-.337,2.775),(.040,.020,.052),iris); attach(ir,head_ctrl)
+        pu=uv("Pupil",(side*.145,-.356,2.775),(.024,.014,.036),black); attach(pu,head_ctrl)
+        gl=uv("Eye_Glint",(side*.132,-.370,2.798),(.010,.007,.013),white); attach(gl,head_ctrl)
+        brow_obj=curve("Eyebrow",[(side*.065,-.310,2.925),(side*.145,-.325,2.945),(side*.225,-.310,2.925)],.016,brow)
+        attach(brow_obj,head_ctrl)
         # Smile corners and cheek tint details
-        cheek=uv("Cheek",(side*.27,-.315,2.57),(.075,.018,.045),skin); attach(cheek,rig,"head")
-    smile=curve("Friendly_Smile",[(-.12,-.354,2.535),(0,-.372,2.505),(.12,-.354,2.535)],.014,mouth); attach(smile,rig,"head")
-    nose=uv("Nose",(0,-.375,2.66),(.052,.065,.060),skin); attach(nose,rig,"head")
+        cheek=uv("Cheek",(side*.235,-.285,2.57),(.055,.012,.035),skin); attach(cheek,head_ctrl)
+    smile=curve("Friendly_Smile",[(-.10,-.318,2.535),(0,-.332,2.515),(.10,-.318,2.535)],.012,mouth); attach(smile,head_ctrl)
+    nose=uv("Nose",(0,-.335,2.66),(.040,.048,.048),skin); attach(nose,head_ctrl)
 
     # Arms and hands, split into independently rigged upper/lower sections
     for side,label in [(-1,"L"),(1,"R")]:
         sh=(side*.36,0,1.98); el=(side*.69,-.005,1.48); wr=(side*.72,-.025,1.06)
-        upper=capsule("Upper_Arm_"+label,sh,el,.118,shirt,.84)
-        for part in upper: attach(part,rig,"upper_arm."+label)
-        elbow=uv("Elbow_"+label,el,(.115,.105,.115),shirt); attach(elbow,rig,"upper_arm."+label)
-        fore=capsule("Forearm_"+label,el,wr,.088,skin,.90)
-        for part in fore: attach(part,rig,"forearm."+label)
-        hand=uv("Hand_"+label,(side*.73,-.035,.98),(.115,.085,.125),skin); attach(hand,rig,"forearm."+label)
+        upper_ctrl=shoulder_l if label=="L" else shoulder_r
+        fore_ctrl=elbow_l if label=="L" else elbow_r
+        upper=capsule("Upper_Arm_"+label,sh,el,.090,shirt,.90)
+        for part in upper: attach(part,upper_ctrl)
+        elbow=uv("Elbow_"+label,el,(.088,.080,.088),shirt); attach(elbow,upper_ctrl)
+        fore=capsule("Forearm_"+label,el,wr,.068,skin,.92)
+        for part in fore: attach(part,fore_ctrl)
+        hand=uv("Hand_"+label,(side*.73,-.035,.98),(.080,.060,.085),skin); attach(hand,fore_ctrl)
         # Five rounded fingers, subtly splayed for a readable hand silhouette.
-        finger_offsets=[(-.075,-.075,.035),(-.038,-.105,.012),(0,-.115,-.005),(.038,-.105,.012),(.075,-.075,.035)]
-        finger_lengths=[.105,.135,.145,.13,.095]
+        finger_offsets=[(-.048,-.045,.025),(-.024,-.060,.008),(0,-.065,-.004),(.024,-.060,.008),(.048,-.045,.025)]
+        finger_lengths=[.075,.095,.105,.095,.070]
         for fi,((dx,dy,dz),flen) in enumerate(zip(finger_offsets,finger_lengths)):
             fx=side*.73+dx
-            finger=uv("Finger_%s_%d"%(label,fi+1),(fx,-.055,.91+dz),(.025,.030,flen*.52),skin,20,16)
-            attach(finger,rig,"forearm."+label)
+            finger=uv("Finger_%s_%d"%(label,fi+1),(fx,-.055,.91+dz),(.015,.020,flen*.52),skin,20,16)
+            attach(finger,fore_ctrl)
     # Legs and shoes
     for side,label in [(-1,"L"),(1,"R")]:
         hip=(side*.19,0,.84); knee=(side*.22,0,.40); ankle=(side*.22,-.015,.11)
-        thigh=capsule("Thigh_"+label,hip,knee,.155,pants,.84)
-        for part in thigh: attach(part,rig,"thigh."+label)
-        shin=capsule("Shin_"+label,knee,ankle,.108,pants,.86)
-        for part in shin: attach(part,rig,"shin."+label)
-        foot=uv("Sneaker_"+label,(side*.22,-.12,.075),(.155,.25,.085),shoes); attach(foot,rig,"shin."+label)
+        hip_ctrl=hip_l if label=="L" else hip_r
+        thigh=capsule("Thigh_"+label,hip,knee,.115,pants,.90)
+        for part in thigh: attach(part,hip_ctrl)
+        shin=capsule("Shin_"+label,knee,ankle,.082,pants,.92)
+        for part in shin: attach(part,hip_ctrl)
+        foot=uv("Sneaker_"+label,(side*.22,-.12,.075),(.12,.19,.065),shoes); attach(foot,hip_ctrl)
 
     # Wave animation: the character's left arm (screen-right) lifts and waves.
     scene.frame_set(1)
-    upper=rig.pose.bones["upper_arm.R"]
-    fore=rig.pose.bones["forearm.R"]
-    upper.rotation_mode="XYZ"; fore.rotation_mode="XYZ"
-    for frame,ang in [(1,0),(12,-.75),(22,-.95),(31,-.55),(42,-.95),(60,-.75),(90,-.75),(120,-.75)]:
-        upper.rotation_euler[1]=ang
-        upper.keyframe_insert(data_path="rotation_euler",frame=frame)
-        fore.rotation_euler[1]=(-.18 if frame<12 else -.55)
-        fore.keyframe_insert(data_path="rotation_euler",frame=frame)
-    # Gentle head nod
-    headbone=rig.pose.bones["head"]; headbone.rotation_mode="XYZ"
-    for f,a in [(1,0),(35,.035),(65,0),(95,-.025),(120,0)]:
-        headbone.rotation_euler[0]=a; headbone.keyframe_insert(data_path="rotation_euler",frame=f)
+    # Key the controller empties directly: no armature deformation or scale surprises.
+    for frame,angle in [(1,0),(12,-.75),(22,-.95),(31,-.55),(42,-.95),(60,-.75),(90,-.75),(120,-.75)]:
+        shoulder_r.rotation_euler[1]=angle
+        shoulder_r.keyframe_insert(data_path="rotation_euler",frame=frame)
+        elbow_r.rotation_euler[1]=(-.10 if frame<12 else -.42)
+        elbow_r.keyframe_insert(data_path="rotation_euler",frame=frame)
+    for f,a in [(1,0),(35,.025),(65,0),(95,-.018),(120,0)]:
+        head_ctrl.rotation_euler[0]=a
+        head_ctrl.keyframe_insert(data_path="rotation_euler",frame=f)
     # Lighting and studio backdrop
     world=bpy.data.worlds.new("Soft_Blue_Studio") if not bpy.data.worlds else bpy.data.worlds[0]
     scene.world=world; world.use_nodes=True
@@ -201,7 +219,7 @@ def main():
     bpy.ops.object.camera_add(location=(0,-8.8,2.35))
     cam=bpy.context.object; cam.name="Character_Camera"
     cam.rotation_euler=(Vector((0,0,1.58))-cam.location).to_track_quat("-Z","Y").to_euler()
-    cam.data.type="ORTHO"; cam.data.ortho_scale=7.2; scene.camera=cam
+    cam.data.type="ORTHO"; cam.data.ortho_scale=5.0; scene.camera=cam
     scene.camera.data.lens=50
     # Blender 5.x uses layered Actions, so the legacy Action.fcurves
     # collection is not available. Blender's default keyframe interpolation
