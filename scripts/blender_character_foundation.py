@@ -121,11 +121,11 @@ def main():
 
     rig=make_rig()
     # Torso and pelvis
-    torso=uv("TShirt_Torso",(0,0,1.62),(.43,.28,.62),shirt); attach(torso,rig,"spine")
+    torso=uv("TShirt_Torso",(0,0,1.62),(.39,.265,.58),shirt); attach(torso,rig,"spine")
     pelvis=uv("Trouser_Hips",(0,0,.91),(.34,.25,.27),pants); attach(pelvis,rig,"pelvis")
     # Neck and head
     neck=uv("Neck",(0,0,2.20),(.16,.16,.22),skin); attach(neck,rig,"neck")
-    head=uv("Expressive_Head",(0,-.015,2.70),(.43,.36,.53),skin,48,32); attach(head,rig,"head")
+    head=uv("Expressive_Head",(0,-.015,2.70),(.405,.34,.50),skin,48,32); attach(head,rig,"head")
     haircap=uv("Hair_Cap",(0,.005,3.00),(.445,.365,.30),hair,48,24); attach(haircap,rig,"head")
     fringe=uv("Hair_Front",(0,-.31,2.96),(.30,.10,.16),hair); attach(fringe,rig,"head")
     # Ears
@@ -133,34 +133,41 @@ def main():
         ear=uv("Ear",(side*.425,-.005,2.69),(.105,.09,.15),skin); attach(ear,rig,"head")
     # Face features on the front (-Y)
     for side in (-1,1):
-        eye=uv("Eye_White",(side*.17,-.337,2.77),(.105,.045,.135),white); attach(eye,rig,"head")
-        ir=uv("Iris",(side*.17,-.378,2.765),(.052,.025,.073),iris); attach(ir,rig,"head")
-        pu=uv("Pupil",(side*.17,-.399,2.765),(.025,.014,.043),black); attach(pu,rig,"head")
-        gl=uv("Eye_Glint",(side*.185,-.412,2.795),(.012,.008,.018),white); attach(gl,rig,"head")
-        brow_obj=curve("Eyebrow",[(side*.08,-.355,2.94),(side*.17,-.37,2.97),(side*.27,-.35,2.94)],.025,brow)
+        eye=uv("Eye_White",(side*.17,-.337,2.77),(.083,.042,.108),white); attach(eye,rig,"head")
+        ir=uv("Iris",(side*.17,-.378,2.765),(.043,.023,.060),iris); attach(ir,rig,"head")
+        pu=uv("Pupil",(side*.17,-.399,2.765),(.021,.012,.035),black); attach(pu,rig,"head")
+        gl=uv("Eye_Glint",(side*.185,-.412,2.795),(.010,.007,.014),white); attach(gl,rig,"head")
+        brow_obj=curve("Eyebrow",[(side*.08,-.355,2.94),(side*.17,-.37,2.97),(side*.27,-.35,2.94)],.021,brow)
         attach(brow_obj,rig,"head")
         # Smile corners and cheek tint details
         cheek=uv("Cheek",(side*.27,-.315,2.57),(.075,.018,.045),skin); attach(cheek,rig,"head")
-    smile=curve("Friendly_Smile",[(-.12,-.354,2.535),(0,-.372,2.505),(.12,-.354,2.535)],.018,mouth); attach(smile,rig,"head")
-    nose=uv("Nose",(0,-.375,2.66),(.065,.075,.075),skin); attach(nose,rig,"head")
+    smile=curve("Friendly_Smile",[(-.12,-.354,2.535),(0,-.372,2.505),(.12,-.354,2.535)],.014,mouth); attach(smile,rig,"head")
+    nose=uv("Nose",(0,-.375,2.66),(.052,.065,.060),skin); attach(nose,rig,"head")
 
     # Arms and hands, split into independently rigged upper/lower sections
     for side,label in [(-1,"L"),(1,"R")]:
         sh=(side*.36,0,1.98); el=(side*.69,-.005,1.48); wr=(side*.72,-.025,1.06)
-        upper=capsule("Upper_Arm_"+label,sh,el,.145,shirt,.82)
+        upper=capsule("Upper_Arm_"+label,sh,el,.118,shirt,.84)
         for part in upper: attach(part,rig,"upper_arm."+label)
-        elbow=uv("Elbow_"+label,el,(.14,.13,.14),shirt); attach(elbow,rig,"upper_arm."+label)
-        fore=capsule("Forearm_"+label,el,wr,.105,skin,.90)
+        elbow=uv("Elbow_"+label,el,(.115,.105,.115),shirt); attach(elbow,rig,"upper_arm."+label)
+        fore=capsule("Forearm_"+label,el,wr,.088,skin,.90)
         for part in fore: attach(part,rig,"forearm."+label)
-        hand=uv("Hand_"+label,(side*.73,-.035,.98),(.14,.11,.16),skin); attach(hand,rig,"forearm."+label)
+        hand=uv("Hand_"+label,(side*.73,-.035,.98),(.115,.085,.125),skin); attach(hand,rig,"forearm."+label)
+        # Five rounded fingers, subtly splayed for a readable hand silhouette.
+        finger_offsets=[(-.075,-.075,.035),(-.038,-.105,.012),(0,-.115,-.005),(.038,-.105,.012),(.075,-.075,.035)]
+        finger_lengths=[.105,.135,.145,.13,.095]
+        for fi,((dx,dy,dz),flen) in enumerate(zip(finger_offsets,finger_lengths)):
+            fx=side*.73+dx
+            finger=uv("Finger_%s_%d"%(label,fi+1),(fx,-.055,.91+dz),(.025,.030,flen*.52),skin,20,16)
+            attach(finger,rig,"forearm."+label)
     # Legs and shoes
     for side,label in [(-1,"L"),(1,"R")]:
         hip=(side*.19,0,.84); knee=(side*.22,0,.40); ankle=(side*.22,-.015,.11)
-        thigh=capsule("Thigh_"+label,hip,knee,.19,pants,.82)
+        thigh=capsule("Thigh_"+label,hip,knee,.155,pants,.84)
         for part in thigh: attach(part,rig,"thigh."+label)
-        shin=capsule("Shin_"+label,knee,ankle,.125,pants,.85)
+        shin=capsule("Shin_"+label,knee,ankle,.108,pants,.86)
         for part in shin: attach(part,rig,"shin."+label)
-        foot=uv("Sneaker_"+label,(side*.22,-.12,.075),(.17,.28,.095),shoes); attach(foot,rig,"shin."+label)
+        foot=uv("Sneaker_"+label,(side*.22,-.12,.075),(.155,.25,.085),shoes); attach(foot,rig,"shin."+label)
 
     # Wave animation: the character's left arm (screen-right) lifts and waves.
     scene.frame_set(1)
